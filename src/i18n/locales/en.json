@@ -1,0 +1,33 @@
+
+{
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "googleSignIn": "Sign in with Google"
+  },
+  "ranks": {
+    "rookieDetective": "Rookie Detective",
+    "juniorDetective": "Junior Detective",
+    "detective": "Detective",
+    "seniorDetective": "Senior Detective",
+    "masterDetective": "Master Detective",
+    "eliteDetective": "Elite Detective",
+    "legendaryDetective": "Legendary Detective"
+  },
+  "cases": {
+    "difficulty": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "expert": "Expert"
+    },
+    "status": {
+      "locked": "Locked",
+      "available": "Available",
+      "inProgress": "In Progress",
+      "solved": "Solved"
+    }
+  }
+}

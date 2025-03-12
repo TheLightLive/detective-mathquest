@@ -1,0 +1,33 @@
+
+{
+  "auth": {
+    "signIn": "Увійти",
+    "signUp": "Реєстрація",
+    "email": "Електронна пошта",
+    "password": "Пароль",
+    "googleSignIn": "Увійти через Google"
+  },
+  "ranks": {
+    "rookieDetective": "Детектив-початківець",
+    "juniorDetective": "Молодший детектив",
+    "detective": "Детектив",
+    "seniorDetective": "Старший детектив",
+    "masterDetective": "Майстер-детектив",
+    "eliteDetective": "Елітний детектив",
+    "legendaryDetective": "Легендарний детектив"
+  },
+  "cases": {
+    "difficulty": {
+      "beginner": "Початковий",
+      "intermediate": "Середній",
+      "advanced": "Просунутий",
+      "expert": "Експерт"
+    },
+    "status": {
+      "locked": "Заблоковано",
+      "available": "Доступно",
+      "inProgress": "В процесі",
+      "solved": "Вирішено"
+    }
+  }
+}

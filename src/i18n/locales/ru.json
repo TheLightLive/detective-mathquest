@@ -1,0 +1,33 @@
+
+{
+  "auth": {
+    "signIn": "Войти",
+    "signUp": "Регистрация",
+    "email": "Электронная почта",
+    "password": "Пароль",
+    "googleSignIn": "Войти через Google"
+  },
+  "ranks": {
+    "rookieDetective": "Детектив-новичок",
+    "juniorDetective": "Младший детектив",
+    "detective": "Детектив",
+    "seniorDetective": "Старший детектив",
+    "masterDetective": "Мастер-детектив",
+    "eliteDetective": "Элитный детектив",
+    "legendaryDetective": "Легендарный детектив"
+  },
+  "cases": {
+    "difficulty": {
+      "beginner": "Начальный",
+      "intermediate": "Средний",
+      "advanced": "Продвинутый",
+      "expert": "Эксперт"
+    },
+    "status": {
+      "locked": "Заблокировано",
+      "available": "Доступно",
+      "inProgress": "В процессе",
+      "solved": "Решено"
+    }
+  }
+}
