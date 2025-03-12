@@ -16,11 +16,11 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Navigate to sign in after animation
+  // Navigate to showcase page after animation
   useEffect(() => {
     if (!loading) {
       const timer = setTimeout(() => {
-        navigate("/signin");
+        navigate("/showcase");
       }, 1500);
       
       return () => clearTimeout(timer);
