@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
@@ -14,6 +13,8 @@ type CasesContextType = {
   updateCaseProgress: (caseId: string, progress: number) => Promise<void>;
   completeCase: (caseId: string) => Promise<void>;
   refreshCases: () => Promise<void>;
+  currentCase?: Case;
+  loadCase: (caseId: string) => void;
 };
 
 const CasesContext = createContext<CasesContextType | undefined>(undefined);
@@ -23,10 +24,10 @@ export const CasesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [userCases, setUserCases] = useState<Record<string, { status: CaseStatus; progress: number }>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentCase, setCurrentCase] = useState<Case | undefined>(undefined);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Load all cases and user progress
   const fetchCasesAndProgress = async () => {
     if (!user) {
       setLoading(false);
@@ -37,7 +38,6 @@ export const CasesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setError(null);
 
     try {
-      // Fetch all cases
       const { data: casesData, error: casesError } = await supabase
         .from("cases")
         .select("*")
@@ -45,7 +45,6 @@ export const CasesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (casesError) throw casesError;
 
-      // Fetch user progress for these cases
       const { data: userProgressData, error: progressError } = await supabase
         .from("user_cases")
         .select("*")
@@ -53,9 +52,24 @@ export const CasesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (progressError) throw progressError;
 
-      // Process cases with user progress
       const processedCases = casesData.map((caseItem) => {
         const userProgress = userProgressData.find(p => p.case_id === caseItem.id);
+        
+        let category = "general";
+        if (caseItem.math_concepts && caseItem.math_concepts.length > 0) {
+          if (caseItem.math_concepts.includes("algebra")) {
+            category = "algebra";
+          } else if (caseItem.math_concepts.includes("geometry")) {
+            category = "geometry";
+          } else if (caseItem.math_concepts.includes("probability")) {
+            category = "probability";
+          } else if (caseItem.math_concepts.includes("calculus")) {
+            category = "advanced";
+          }
+        }
+        
+        const progress = userProgress ? 
+          (userProgress.status === "solved" ? 100 : (userProgress.status === "in_progress" ? 50 : 0)) : 0;
         
         return {
           id: caseItem.id,
@@ -67,17 +81,17 @@ export const CasesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           prerequisites: caseItem.prerequisites || [],
           mathConcepts: caseItem.math_concepts,
           locale: caseItem.locale,
-          progress: 0, // Default progress
+          category,
+          progress,
           completed: userProgress?.status === "solved"
         } as Case;
       });
 
-      // Create user cases object for easier access
       const userCasesObj: Record<string, { status: CaseStatus; progress: number }> = {};
       userProgressData.forEach(progress => {
         userCasesObj[progress.case_id] = {
           status: progress.status as CaseStatus,
-          progress: 0 // We'll update this later if we add progress tracking
+          progress: progress.status === "solved" ? 100 : (progress.status === "in_progress" ? 50 : 0)
         };
       });
 
@@ -104,7 +118,6 @@ export const CasesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!user) return;
 
     try {
-      // Check if the user already has a record for this case
       const { data } = await supabase
         .from("user_cases")
         .select("*")
@@ -113,7 +126,6 @@ export const CasesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         .single();
 
       if (!data) {
-        // Create a new record
         const { error } = await supabase
           .from("user_cases")
           .insert({
@@ -124,7 +136,6 @@ export const CasesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         if (error) throw error;
 
-        // Update local state
         setUserCases(prev => ({
           ...prev,
           [caseId]: { status: "in_progress", progress: 0 }
@@ -157,8 +168,6 @@ export const CasesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!user) return;
 
     try {
-      // Update user_cases table (if we decide to store progress)
-      // For now, we're just updating the local state
       setUserCases(prev => ({
         ...prev,
         [caseId]: { ...prev[caseId], progress }
@@ -180,7 +189,6 @@ export const CasesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!user) return;
 
     try {
-      // Update the case status to solved
       const { error } = await supabase
         .from("user_cases")
         .update({
@@ -192,11 +200,9 @@ export const CasesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (error) throw error;
 
-      // Get the XP reward for this case
       const caseItem = cases.find(c => c.id === caseId);
       if (!caseItem) return;
 
-      // Update user profile with XP reward
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -209,7 +215,6 @@ export const CasesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (profileError) throw profileError;
 
-      // Update local state
       setUserCases(prev => ({
         ...prev,
         [caseId]: { status: "solved", progress: 100 }
@@ -241,6 +246,13 @@ export const CasesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     await fetchCasesAndProgress();
   };
 
+  const loadCase = (caseId: string) => {
+    const foundCase = cases.find(c => c.id === caseId);
+    if (foundCase) {
+      setCurrentCase(foundCase);
+    }
+  };
+
   return (
     <CasesContext.Provider
       value={{
@@ -251,7 +263,9 @@ export const CasesProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         startCase,
         updateCaseProgress,
         completeCase,
-        refreshCases
+        refreshCases,
+        currentCase,
+        loadCase
       }}
     >
       {children}

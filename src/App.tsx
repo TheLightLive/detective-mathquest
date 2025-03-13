@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import Dashboard from "./pages/Dashboard";
 import Cases from "./pages/Cases";
+import Investigation from "./pages/Investigation";
 import AuthCallback from "./pages/AuthCallback";
 import Showcase from "./pages/Showcase";
 import NotFound from "./pages/NotFound";
@@ -86,6 +87,11 @@ const AppRoutes = () => {
       <Route path="/cases" element={
         <ProtectedRoute>
           <Cases />
+        </ProtectedRoute>
+      } />
+      <Route path="/investigation/:id" element={
+        <ProtectedRoute>
+          <Investigation />
         </ProtectedRoute>
       } />
       
