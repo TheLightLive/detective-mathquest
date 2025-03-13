@@ -1,29 +1,26 @@
 
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { auth } from "@/integrations/firebase/client";
+import { onAuthStateChanged } from "firebase/auth";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
     // Handle the OAuth callback
-    const handleAuthCallback = async () => {
-      const { data, error } = await supabase.auth.getSession();
+    const handleAuthCallback = () => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          // Successfully authenticated
+          navigate("/dashboard");
+        } else {
+          // No session found
+          navigate("/signin");
+        }
+      });
       
-      if (error) {
-        console.error("Error during auth callback:", error);
-        navigate("/signin");
-        return;
-      }
-      
-      if (data.session) {
-        // Successfully authenticated
-        navigate("/dashboard");
-      } else {
-        // No session found
-        navigate("/signin");
-      }
+      return () => unsubscribe();
     };
 
     handleAuthCallback();
