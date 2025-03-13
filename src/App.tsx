@@ -4,8 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import { CasesProvider } from "./contexts/CasesContext";
+import { FirebaseAuthProvider } from "./contexts/FirebaseAuthContext";
+import { FirebaseCasesProvider } from "./contexts/FirebaseCasesContext";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import Dashboard from "./pages/Dashboard";
@@ -15,13 +15,14 @@ import AuthCallback from "./pages/AuthCallback";
 import Showcase from "./pages/Showcase";
 import NotFound from "./pages/NotFound";
 import DetectiveCases from "./pages/DetectiveCases";
-import { useAuth } from "./contexts/AuthContext";
+import Profile from "./pages/Profile";
+import { useFirebaseAuth } from "./contexts/FirebaseAuthContext";
 import { useEffect } from "react";
 import { useIsMobile } from "./hooks/use-mobile";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useFirebaseAuth();
   
   if (loading) {
     return (
@@ -100,6 +101,11 @@ const AppRoutes = () => {
           <DetectiveCases />
         </ProtectedRoute>
       } />
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <Profile />
+        </ProtectedRoute>
+      } />
       
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
@@ -112,16 +118,16 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
-      <AuthProvider>
-        <CasesProvider>
+      <FirebaseAuthProvider>
+        <FirebaseCasesProvider>
           <TooltipProvider>
             <MobileViewportAdjuster />
             <Toaster />
             <Sonner />
             <AppRoutes />
           </TooltipProvider>
-        </CasesProvider>
-      </AuthProvider>
+        </FirebaseCasesProvider>
+      </FirebaseAuthProvider>
     </BrowserRouter>
   </QueryClientProvider>
 );

@@ -5,7 +5,28 @@
     "signUp": "Регистрация",
     "email": "Электронная почта",
     "password": "Пароль",
-    "googleSignIn": "Войти через Google"
+    "googleSignIn": "Войти через Google",
+    "detectiveName": "Имя детектива",
+    "joinAgency": "Вступить в агентство",
+    "caseAccess": "Доступ к делам",
+    "createProfile": "Создайте профиль детектива, чтобы начать расследования",
+    "signInContinue": "Войдите, чтобы продолжить расследования",
+    "orContinueWith": "Или продолжить с",
+    "alreadyHaveAccount": "Уже есть аккаунт? Войти",
+    "needAccount": "Нужен аккаунт? Регистрация",
+    "placeholders": {
+      "name": "Введите ваше имя",
+      "email": "Введите вашу почту",
+      "password": "Введите ваш пароль"
+    },
+    "errors": {
+      "nameRequired": "Требуется имя",
+      "enterName": "Пожалуйста, введите имя детектива"
+    },
+    "success": {
+      "accountCreated": "Аккаунт создан!",
+      "welcome": "Добро пожаловать в MathDetective, детектив."
+    }
   },
   "ranks": {
     "rookieDetective": "Детектив-новичок",
@@ -29,5 +50,34 @@
       "inProgress": "В процессе",
       "solved": "Решено"
     }
+  },
+  "profile": {
+    "tabs": {
+      "overview": "Обзор",
+      "stats": "Статистика",
+      "cases": "Мои дела"
+    },
+    "xp": "Очки опыта",
+    "casesSolved": "Решено дел",
+    "streak": "Серия решений",
+    "nextLevel": "Следующий уровень",
+    "progress": "Прогресс",
+    "stats": {
+      "casesCompleted": "Завершенные дела",
+      "concept": "По концепциям",
+      "algebra": "Алгебра",
+      "geometry": "Геометрия",
+      "probability": "Вероятность",
+      "advanced": "Продвинутые"
+    },
+    "cases": {
+      "inProgress": "В процессе",
+      "progress": "Прогресс",
+      "continue": "Продолжить",
+      "noInProgress": "Нет дел в работе"
+    }
+  },
+  "common": {
+    "loading": "Загрузка..."
   }
 }

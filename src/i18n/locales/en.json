@@ -5,7 +5,28 @@
     "signUp": "Sign Up",
     "email": "Email",
     "password": "Password",
-    "googleSignIn": "Sign in with Google"
+    "googleSignIn": "Sign in with Google",
+    "detectiveName": "Detective Name",
+    "joinAgency": "Join the Agency",
+    "caseAccess": "Case Access",
+    "createProfile": "Create your detective profile to start solving cases",
+    "signInContinue": "Sign in to continue your investigations",
+    "orContinueWith": "Or continue with",
+    "alreadyHaveAccount": "Already have an account? Sign In",
+    "needAccount": "Need an account? Sign Up",
+    "placeholders": {
+      "name": "Enter your name",
+      "email": "Enter your email",
+      "password": "Enter your password"
+    },
+    "errors": {
+      "nameRequired": "Name required",
+      "enterName": "Please enter your detective name"
+    },
+    "success": {
+      "accountCreated": "Account created!",
+      "welcome": "Welcome to MathDetective, detective."
+    }
   },
   "ranks": {
     "rookieDetective": "Rookie Detective",
@@ -29,5 +50,34 @@
       "inProgress": "In Progress",
       "solved": "Solved"
     }
+  },
+  "profile": {
+    "tabs": {
+      "overview": "Overview",
+      "stats": "Statistics",
+      "cases": "My Cases"
+    },
+    "xp": "Experience Points",
+    "casesSolved": "Cases Solved",
+    "streak": "Solving Streak",
+    "nextLevel": "Next Level",
+    "progress": "Progress",
+    "stats": {
+      "casesCompleted": "Cases Completed",
+      "concept": "By Concept",
+      "algebra": "Algebra",
+      "geometry": "Geometry",
+      "probability": "Probability",
+      "advanced": "Advanced"
+    },
+    "cases": {
+      "inProgress": "In Progress",
+      "progress": "Progress",
+      "continue": "Continue",
+      "noInProgress": "No cases in progress"
+    }
+  },
+  "common": {
+    "loading": "Loading..."
   }
 }

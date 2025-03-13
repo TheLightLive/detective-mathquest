@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, LogIn, Mail, Lock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/contexts/AuthContext";
+import { useFirebaseAuth } from "@/contexts/FirebaseAuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 const SignInForm = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -15,8 +17,9 @@ const SignInForm = () => {
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn, signUp, signInWithGoogle, loading, error, user } = useAuth();
+  const { signIn, signUp, signInWithGoogle, loading, error, user } = useFirebaseAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -39,8 +42,8 @@ const SignInForm = () => {
     if (isSignUp) {
       if (!name.trim()) {
         toast({
-          title: "Name required",
-          description: "Please enter your detective name",
+          title: t("auth.errors.nameRequired"),
+          description: t("auth.errors.enterName"),
           variant: "destructive",
         });
         return;
@@ -49,8 +52,8 @@ const SignInForm = () => {
       try {
         await signUp(email, password, name);
         toast({
-          title: "Account created!",
-          description: "Welcome to MathDetective, detective.",
+          title: t("auth.success.accountCreated"),
+          description: t("auth.success.welcome"),
         });
       } catch (err) {
         console.error("Sign up error:", err);
@@ -90,12 +93,12 @@ const SignInForm = () => {
     <div className="w-full max-w-md mx-auto p-6 noir-card animate-fade-in">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-detective text-neon-cyan mb-2">
-          {isSignUp ? "Join the Agency" : "Case Access"}
+          {isSignUp ? t("auth.joinAgency") : t("auth.caseAccess")}
         </h2>
         <p className="text-gray-400">
           {isSignUp 
-            ? "Create your detective profile to start solving cases" 
-            : "Sign in to continue your investigations"}
+            ? t("auth.createProfile")
+            : t("auth.signInContinue")}
         </p>
       </div>
 
@@ -109,7 +112,7 @@ const SignInForm = () => {
         {isSignUp && (
           <div className="space-y-2">
             <label htmlFor="name" className="block text-sm text-gray-300">
-              Detective Name
+              {t("auth.detectiveName")}
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
@@ -118,7 +121,7 @@ const SignInForm = () => {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
+                placeholder={t("auth.placeholders.name")}
                 className="pl-10 bg-noir-accent border-noir-accent focus:border-neon-cyan"
                 required={isSignUp}
               />
@@ -128,7 +131,7 @@ const SignInForm = () => {
 
         <div className="space-y-2">
           <label htmlFor="email" className="block text-sm text-gray-300">
-            Email
+            {t("auth.email")}
           </label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
@@ -137,7 +140,7 @@ const SignInForm = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
+              placeholder={t("auth.placeholders.email")}
               className="pl-10 bg-noir-accent border-noir-accent focus:border-neon-cyan"
               required
             />
@@ -146,7 +149,7 @@ const SignInForm = () => {
 
         <div className="space-y-2">
           <label htmlFor="password" className="block text-sm text-gray-300">
-            Password
+            {t("auth.password")}
           </label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
@@ -155,7 +158,7 @@ const SignInForm = () => {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder={t("auth.placeholders.password")}
               className="pl-10 pr-10 bg-noir-accent border-noir-accent focus:border-neon-cyan"
               required
               minLength={6}
@@ -188,7 +191,7 @@ const SignInForm = () => {
           ) : (
             <div className="flex items-center justify-center">
               <LogIn className="mr-2 h-4 w-4" />
-              {isSignUp ? "Sign Up" : "Sign In"}
+              {isSignUp ? t("auth.signUp") : t("auth.signIn")}
             </div>
           )}
         </Button>
@@ -198,7 +201,7 @@ const SignInForm = () => {
             <div className="w-full border-t border-gray-700"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-noir-light text-gray-400">Or continue with</span>
+            <span className="px-2 bg-noir-light text-gray-400">{t("auth.orContinueWith")}</span>
           </div>
         </div>
 
@@ -227,7 +230,7 @@ const SignInForm = () => {
               fill="#EA4335"
             />
           </svg>
-          Google
+          {t("auth.googleSignIn")}
         </Button>
 
         <div className="text-center mt-6">
@@ -237,8 +240,8 @@ const SignInForm = () => {
             className="text-neon-purple hover:text-neon-purple/80 text-sm transition-colors duration-200"
           >
             {isSignUp
-              ? "Already have an account? Sign In"
-              : "Need an account? Sign Up"}
+              ? t("auth.alreadyHaveAccount")
+              : t("auth.needAccount")}
           </button>
         </div>
       </form>
@@ -247,4 +250,3 @@ const SignInForm = () => {
 };
 
 export default SignInForm;
-

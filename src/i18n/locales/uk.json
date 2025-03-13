@@ -5,7 +5,28 @@
     "signUp": "Реєстрація",
     "email": "Електронна пошта",
     "password": "Пароль",
-    "googleSignIn": "Увійти через Google"
+    "googleSignIn": "Увійти через Google",
+    "detectiveName": "Ім'я детектива",
+    "joinAgency": "Приєднатися до агентства",
+    "caseAccess": "Доступ до справ",
+    "createProfile": "Створіть профіль детектива, щоб почати розслідування",
+    "signInContinue": "Увійдіть, щоб продовжити розслідування",
+    "orContinueWith": "Або продовжити з",
+    "alreadyHaveAccount": "Вже є акаунт? Увійти",
+    "needAccount": "Потрібен акаунт? Реєстрація",
+    "placeholders": {
+      "name": "Введіть ваше ім'я",
+      "email": "Введіть вашу пошту",
+      "password": "Введіть ваш пароль"
+    },
+    "errors": {
+      "nameRequired": "Потрібне ім'я",
+      "enterName": "Будь ласка, введіть ім'я детектива"
+    },
+    "success": {
+      "accountCreated": "Акаунт створено!",
+      "welcome": "Ласкаво просимо до MathDetective, детектив."
+    }
   },
   "ranks": {
     "rookieDetective": "Детектив-початківець",
@@ -29,5 +50,34 @@
       "inProgress": "В процесі",
       "solved": "Вирішено"
     }
+  },
+  "profile": {
+    "tabs": {
+      "overview": "Огляд",
+      "stats": "Статистика",
+      "cases": "Мої справи"
+    },
+    "xp": "Очки досвіду",
+    "casesSolved": "Вирішено справ",
+    "streak": "Серія рішень",
+    "nextLevel": "Наступний рівень",
+    "progress": "Прогрес",
+    "stats": {
+      "casesCompleted": "Завершені справи",
+      "concept": "За концепціями",
+      "algebra": "Алгебра",
+      "geometry": "Геометрія",
+      "probability": "Ймовірність",
+      "advanced": "Просунуті"
+    },
+    "cases": {
+      "inProgress": "В процесі",
+      "progress": "Прогрес",
+      "continue": "Продовжити",
+      "noInProgress": "Немає справ у роботі"
+    }
+  },
+  "common": {
+    "loading": "Завантаження..."
   }
 }
