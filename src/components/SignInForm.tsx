@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, LogIn, Mail, Lock, User } from "lucide-react";
@@ -37,27 +36,31 @@ const SignInForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    try {
-      if (isSignUp) {
-        if (!name.trim()) {
-          toast({
-            title: "Name required",
-            description: "Please enter your detective name",
-            variant: "destructive",
-          });
-          return;
-        }
-        
+    if (isSignUp) {
+      if (!name.trim()) {
+        toast({
+          title: "Name required",
+          description: "Please enter your detective name",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      try {
         await signUp(email, password, name);
         toast({
           title: "Account created!",
           description: "Welcome to MathDetective, detective.",
         });
-      } else {
-        await signIn(email, password);
+      } catch (err) {
+        console.error("Sign up error:", err);
       }
-    } catch (err) {
-      // Error already handled by auth context
+    } else {
+      try {
+        await signIn(email, password);
+      } catch (err) {
+        console.error("Sign in error:", err);
+      }
     }
   };
 
@@ -65,7 +68,7 @@ const SignInForm = () => {
     try {
       await signInWithGoogle();
     } catch (err) {
-      // Error already handled by auth context
+      console.error("Google sign in error:", err);
     }
   };
 
@@ -244,3 +247,4 @@ const SignInForm = () => {
 };
 
 export default SignInForm;
+

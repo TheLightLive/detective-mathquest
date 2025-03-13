@@ -14,6 +14,7 @@ import Investigation from "./pages/Investigation";
 import AuthCallback from "./pages/AuthCallback";
 import Showcase from "./pages/Showcase";
 import NotFound from "./pages/NotFound";
+import DetectiveCases from "./pages/DetectiveCases";
 import { useAuth } from "./contexts/AuthContext";
 import { useEffect } from "react";
 import { useIsMobile } from "./hooks/use-mobile";
@@ -92,6 +93,11 @@ const AppRoutes = () => {
       <Route path="/investigation/:id" element={
         <ProtectedRoute>
           <Investigation />
+        </ProtectedRoute>
+      } />
+      <Route path="/detective-cases" element={
+        <ProtectedRoute>
+          <DetectiveCases />
         </ProtectedRoute>
       } />
       
