@@ -27,6 +27,7 @@
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
     --radius: 0.5rem;
+    --vh: 1vh;
   }
 }
 
@@ -36,6 +37,32 @@
   }
   body {
     @apply bg-noir text-foreground font-noir;
+    /* Use CSS variable for height to fix mobile viewport issues */
+    min-height: 100vh; /* fallback */
+    min-height: calc(var(--vh, 1vh) * 100);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Fix for iOS input zoom */
+  input, select, textarea {
+    @apply text-base;
+    font-size: 16px;
+  }
+  
+  /* Improve tap targets on mobile */
+  button, a, [role="button"] {
+    @apply cursor-pointer;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Handle landscape orientation better */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .responsive-height {
+      height: calc(var(--vh, 1vh) * 100);
+      overflow-y: auto;
+    }
   }
 }
 
@@ -54,5 +81,44 @@
   
   .detective-heading {
     @apply font-detective text-neon-cyan;
+  }
+  
+  /* Mobile-specific components */
+  .mobile-container {
+    @apply px-4 w-full max-w-md mx-auto;
+  }
+  
+  .mobile-bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-noir-light border-t border-noir-accent flex justify-around p-2 z-50;
+  }
+  
+  .mobile-nav-item {
+    @apply flex flex-col items-center justify-center p-2 text-xs;
+  }
+}
+
+/* CSS for mobile swipe gestures */
+.swipe-container {
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Touch feedback */
+@media (hover: none) {
+  .touch-feedback:active {
+    opacity: 0.7;
+    transition: opacity 0.1s;
+  }
+}
+
+/* Safe area padding for notched devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .mobile-bottom-nav {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
   }
 }

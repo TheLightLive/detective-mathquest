@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { CasesProvider } from "./contexts/CasesContext";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
 import Dashboard from "./pages/Dashboard";
@@ -13,6 +14,8 @@ import AuthCallback from "./pages/AuthCallback";
 import Showcase from "./pages/Showcase";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./contexts/AuthContext";
+import { useEffect } from "react";
+import { useIsMobile } from "./hooks/use-mobile";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -37,6 +40,32 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
   
   return <>{children}</>;
+};
+
+// Mobile viewport adjustment for iOS/Android
+const MobileViewportAdjuster = () => {
+  const isMobile = useIsMobile();
+
+  useEffect(() => {
+    if (isMobile) {
+      // Fix for iOS/Android to handle viewport height properly
+      const setVh = () => {
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+      };
+
+      setVh();
+      window.addEventListener('resize', setVh);
+      window.addEventListener('orientationchange', setVh);
+
+      return () => {
+        window.removeEventListener('resize', setVh);
+        window.removeEventListener('orientationchange', setVh);
+      };
+    }
+  }, [isMobile]);
+
+  return null;
 };
 
 // App routes with authentication wrapper
@@ -72,11 +101,14 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AppRoutes />
-        </TooltipProvider>
+        <CasesProvider>
+          <TooltipProvider>
+            <MobileViewportAdjuster />
+            <Toaster />
+            <Sonner />
+            <AppRoutes />
+          </TooltipProvider>
+        </CasesProvider>
       </AuthProvider>
     </BrowserRouter>
   </QueryClientProvider>

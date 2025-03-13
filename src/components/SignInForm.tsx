@@ -155,6 +155,7 @@ const SignInForm = () => {
               placeholder="Enter your password"
               className="pl-10 pr-10 bg-noir-accent border-noir-accent focus:border-neon-cyan"
               required
+              minLength={6}
             />
             <button
               type="button"
@@ -173,7 +174,7 @@ const SignInForm = () => {
         <Button
           type="submit"
           disabled={loading}
-          className="w-full bg-neon-cyan hover:bg-neon-cyan/80 text-black font-bold"
+          className="w-full bg-neon-cyan hover:bg-neon-cyan/80 text-black font-bold transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
         >
           {loading ? (
             <div className="flex items-center space-x-2">
@@ -203,7 +204,7 @@ const SignInForm = () => {
           variant="outline"
           onClick={handleGoogleSignIn}
           disabled={loading}
-          className="w-full border-gray-700 bg-noir-accent hover:bg-noir-accent/80"
+          className="w-full border-gray-700 bg-noir-accent hover:bg-noir-accent/80 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
         >
           <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
             <path
@@ -230,7 +231,7 @@ const SignInForm = () => {
           <button
             type="button"
             onClick={toggleView}
-            className="text-neon-purple hover:text-neon-purple/80 text-sm"
+            className="text-neon-purple hover:text-neon-purple/80 text-sm transition-colors duration-200"
           >
             {isSignUp
               ? "Already have an account? Sign In"
