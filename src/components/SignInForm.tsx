@@ -1,6 +1,6 @@
 
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, LogIn, Mail, Lock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,14 +15,39 @@ const SignInForm = () => {
   const [name, setName] = useState("");
   
   const navigate = useNavigate();
-  const { signIn, signUp, signInWithGoogle, loading, error } = useAuth();
+  const location = useLocation();
+  const { signIn, signUp, signInWithGoogle, loading, error, user } = useAuth();
   const { toast } = useToast();
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+
+  // Check for sign-up mode from query params
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get("mode") === "signup") {
+      setIsSignUp(true);
+    }
+  }, [location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
       if (isSignUp) {
+        if (!name.trim()) {
+          toast({
+            title: "Name required",
+            description: "Please enter your detective name",
+            variant: "destructive",
+          });
+          return;
+        }
+        
         await signUp(email, password, name);
         toast({
           title: "Account created!",
@@ -30,12 +55,7 @@ const SignInForm = () => {
         });
       } else {
         await signIn(email, password);
-        toast({
-          title: "Signed in!",
-          description: "Welcome back, detective.",
-        });
       }
-      navigate("/dashboard");
     } catch (err) {
       // Error already handled by auth context
     }
@@ -44,7 +64,6 @@ const SignInForm = () => {
   const handleGoogleSignIn = async () => {
     try {
       await signInWithGoogle();
-      navigate("/dashboard");
     } catch (err) {
       // Error already handled by auth context
     }
@@ -53,6 +72,15 @@ const SignInForm = () => {
   const toggleView = () => {
     setIsSignUp(!isSignUp);
     setShowPassword(false);
+    
+    // Update URL to reflect current mode without reload
+    const url = new URL(window.location.href);
+    if (isSignUp) {
+      url.searchParams.delete("mode");
+    } else {
+      url.searchParams.set("mode", "signup");
+    }
+    window.history.pushState({}, "", url.toString());
   };
 
   return (
@@ -89,7 +117,7 @@ const SignInForm = () => {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter your name"
                 className="pl-10 bg-noir-accent border-noir-accent focus:border-neon-cyan"
-                required
+                required={isSignUp}
               />
             </div>
           </div>

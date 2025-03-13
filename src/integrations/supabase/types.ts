@@ -9,7 +9,116 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      cases: {
+        Row: {
+          created_at: string
+          description: string
+          difficulty: string
+          id: string
+          locale: string
+          math_concepts: string[]
+          prerequisites: string[] | null
+          title: string
+          updated_at: string
+          xp_reward: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          difficulty: string
+          id?: string
+          locale?: string
+          math_concepts: string[]
+          prerequisites?: string[] | null
+          title: string
+          updated_at?: string
+          xp_reward: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          difficulty?: string
+          id?: string
+          locale?: string
+          math_concepts?: string[]
+          prerequisites?: string[] | null
+          title?: string
+          updated_at?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          cases_solved: number
+          created_at: string
+          id: string
+          last_solved_at: string | null
+          name: string
+          streak: number
+          updated_at: string
+          xp: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          cases_solved?: number
+          created_at?: string
+          id: string
+          last_solved_at?: string | null
+          name: string
+          streak?: number
+          updated_at?: string
+          xp?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          cases_solved?: number
+          created_at?: string
+          id?: string
+          last_solved_at?: string | null
+          name?: string
+          streak?: number
+          updated_at?: string
+          xp?: number
+        }
+        Relationships: []
+      }
+      user_cases: {
+        Row: {
+          case_id: string
+          completed_at: string | null
+          id: string
+          started_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          case_id: string
+          completed_at?: string | null
+          id?: string
+          started_at?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          case_id?: string
+          completed_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_cases_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
