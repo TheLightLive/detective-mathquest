@@ -8,14 +8,18 @@ import {
   Briefcase, 
   UserCircle, 
   LogOut, 
-  Calculator 
+  Calculator,
+  Globe
 } from "lucide-react";
 import { useFirebaseAuth } from "@/contexts/FirebaseAuthContext";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { user, signOut } = useFirebaseAuth();
+  const { t } = useTranslation();
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -41,6 +45,7 @@ const NavBar = () => {
           
           {/* Mobile menu button */}
           <div className="flex items-center sm:hidden">
+            <LanguageSwitcher />
             <button
               onClick={toggleMenu}
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-noir-accent"
@@ -66,7 +71,7 @@ const NavBar = () => {
               >
                 <div className="flex items-center">
                   <Home className="mr-1 h-4 w-4" />
-                  Dashboard
+                  {t("navigation.dashboard")}
                 </div>
               </Link>
               
@@ -80,7 +85,7 @@ const NavBar = () => {
               >
                 <div className="flex items-center">
                   <Briefcase className="mr-1 h-4 w-4" />
-                  Cases
+                  {t("navigation.cases")}
                 </div>
               </Link>
               
@@ -94,7 +99,7 @@ const NavBar = () => {
               >
                 <div className="flex items-center">
                   <Calculator className="mr-1 h-4 w-4" />
-                  Math Tools
+                  {t("navigation.mathTools")}
                 </div>
               </Link>
               
@@ -108,7 +113,7 @@ const NavBar = () => {
               >
                 <div className="flex items-center">
                   <UserCircle className="mr-1 h-4 w-4" />
-                  Profile
+                  {t("navigation.profile")}
                 </div>
               </Link>
               
@@ -118,9 +123,11 @@ const NavBar = () => {
               >
                 <div className="flex items-center">
                   <LogOut className="mr-1 h-4 w-4" />
-                  Sign Out
+                  {t("navigation.signOut")}
                 </div>
               </button>
+              
+              <LanguageSwitcher />
             </div>
           </div>
         </div>
@@ -141,7 +148,7 @@ const NavBar = () => {
             >
               <div className="flex items-center">
                 <Home className="mr-2 h-5 w-5" />
-                Dashboard
+                {t("navigation.dashboard")}
               </div>
             </Link>
             
@@ -156,7 +163,7 @@ const NavBar = () => {
             >
               <div className="flex items-center">
                 <Briefcase className="mr-2 h-5 w-5" />
-                Cases
+                {t("navigation.cases")}
               </div>
             </Link>
             
@@ -171,7 +178,7 @@ const NavBar = () => {
             >
               <div className="flex items-center">
                 <Calculator className="mr-2 h-5 w-5" />
-                Math Tools
+                {t("navigation.mathTools")}
               </div>
             </Link>
             
@@ -186,7 +193,7 @@ const NavBar = () => {
             >
               <div className="flex items-center">
                 <UserCircle className="mr-2 h-5 w-5" />
-                Profile
+                {t("navigation.profile")}
               </div>
             </Link>
             
@@ -199,7 +206,7 @@ const NavBar = () => {
             >
               <div className="flex items-center">
                 <LogOut className="mr-2 h-5 w-5" />
-                Sign Out
+                {t("navigation.signOut")}
               </div>
             </button>
           </div>

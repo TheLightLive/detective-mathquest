@@ -28,34 +28,28 @@
       "welcome": "Welcome to MathDetective, detective."
     }
   },
-  "ranks": {
-    "rookieDetective": "Rookie Detective",
-    "juniorDetective": "Junior Detective",
-    "detective": "Detective",
-    "seniorDetective": "Senior Detective",
-    "masterDetective": "Master Detective",
-    "eliteDetective": "Elite Detective",
-    "legendaryDetective": "Legendary Detective"
-  },
-  "cases": {
-    "difficulty": {
-      "beginner": "Beginner",
-      "intermediate": "Intermediate",
-      "advanced": "Advanced",
-      "expert": "Expert"
-    },
-    "status": {
-      "locked": "Locked",
-      "available": "Available",
-      "inProgress": "In Progress",
-      "solved": "Solved"
-    }
+  "navigation": {
+    "dashboard": "Dashboard",
+    "cases": "Cases",
+    "mathTools": "Math Tools",
+    "profile": "Profile",
+    "signOut": "Sign Out"
   },
   "profile": {
+    "edit": "Edit Profile",
+    "save": "Save Changes",
+    "cancel": "Cancel",
     "tabs": {
       "overview": "Overview",
       "stats": "Statistics",
-      "cases": "My Cases"
+      "cases": "My Cases",
+      "edit": "Edit Profile"
+    },
+    "editInfo": {
+      "name": "Detective Name",
+      "email": "Email Address",
+      "nameRequired": "Name is required",
+      "changes": "Changes saved successfully"
     },
     "xp": "Experience Points",
     "casesSolved": "Cases Solved",
@@ -77,7 +71,97 @@
       "noInProgress": "No cases in progress"
     }
   },
+  "cases": {
+    "modules": {
+      "title": "Learning Modules",
+      "basics": "Math Basics",
+      "algebra": "Algebra",
+      "geometry": "Geometry",
+      "probability": "Probability",
+      "advanced": "Advanced Math"
+    },
+    "difficulty": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "expert": "Expert"
+    },
+    "status": {
+      "locked": "Locked",
+      "available": "Available",
+      "inProgress": "In Progress",
+      "solved": "Solved"
+    },
+    "details": {
+      "xpReward": "XP Reward",
+      "startCase": "Start Investigation",
+      "continueCase": "Continue Investigation",
+      "reviewCase": "Review Case",
+      "prerequisites": "Prerequisites",
+      "concepts": "Math Concepts"
+    },
+    "filters": {
+      "all": "All Categories",
+      "allDifficulty": "All Difficulties",
+      "clearFilters": "Clear Filters",
+      "search": "Search cases..."
+    },
+    "algebra": {
+      "title": "The Missing Variable",
+      "description": "A crucial variable has disappeared from an important equation. Find its value to solve the case.",
+      "intro": "Detective, we have a situation. An important equation used in calculating the city's power grid has been tampered with. The variable x has been removed, and we need your help to find its value."
+    }
+  },
+  "dashboard": {
+    "welcome": "Welcome, Detective",
+    "welcomeSubtitle": "Your investigation board awaits. What mystery will you solve today?",
+    "currentRank": "Current Rank",
+    "untilPromotion": "XP until next promotion",
+    "detectiveStreak": "Detective Streak",
+    "days": "days",
+    "casesStatus": "Cases Status",
+    "solved": "Solved",
+    "active": "Active",
+    "new": "New",
+    "recentActivity": "Recent Activity",
+    "caseCompleted": "Case completed!",
+    "caseProgress": "completed",
+    "newCaseAvailable": "New case available",
+    "quickActions": "Quick Actions",
+    "viewAllCases": "View All Cases",
+    "openMathTools": "Open Math Tools",
+    "viewAchievements": "View Achievements"
+  },
+  "showcase": {
+    "title": "Become a Math Detective",
+    "subtitle": "Solve mysteries using your math skills",
+    "features": {
+      "interactive": "Interactive Investigations",
+      "interactiveDesc": "Engaging cases that make learning math fun",
+      "skills": "Build Math Skills",
+      "skillsDesc": "Progress through increasingly challenging problems",
+      "real": "Real-world Applications",
+      "realDesc": "See how math solves everyday mysteries"
+    },
+    "cta": "Start Solving Cases",
+    "signIn": "Sign In"
+  },
   "common": {
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "notFound": "Not found",
+    "back": "Go back",
+    "search": "Search",
+    "filter": "Filter",
+    "all": "All"
+  },
+  "ranks": {
+    "rookieDetective": "Rookie Detective",
+    "juniorDetective": "Junior Detective",
+    "detective": "Detective",
+    "seniorDetective": "Senior Detective",
+    "masterDetective": "Master Detective",
+    "eliteDetective": "Elite Detective",
+    "legendaryDetective": "Legendary Detective"
   }
 }

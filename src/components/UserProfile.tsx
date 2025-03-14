@@ -2,19 +2,29 @@
 import React, { useState } from 'react';
 import { useFirebaseAuth } from "@/contexts/FirebaseAuthContext";
 import { useFirebaseCases } from "@/contexts/FirebaseCasesContext";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/integrations/firebase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Award, BookOpen, CheckCircle, Clock, Star, Trophy, User as UserIcon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Award, BookOpen, CheckCircle, Clock, Pencil, Save, Star, Trophy, User as UserIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useToast } from "@/hooks/use-toast";
 
 const UserProfile = () => {
   const { user } = useFirebaseAuth();
   const { cases } = useFirebaseCases();
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!user) {
     return null;
@@ -29,6 +39,54 @@ const UserProfile = () => {
       .map(n => n[0])
       .join("")
       .toUpperCase();
+  };
+
+  const handleEdit = () => {
+    setEditName(user.name);
+    setIsEditing(true);
+    setActiveTab("edit");
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditName(user.name);
+    setNameError("");
+    setActiveTab("overview");
+  };
+
+  const handleSave = async () => {
+    if (!editName.trim()) {
+      setNameError(t("profile.editInfo.nameRequired"));
+      return;
+    }
+
+    setIsSaving(true);
+    
+    try {
+      const userRef = doc(db, "profiles", user.id);
+      await updateDoc(userRef, {
+        name: editName.trim(),
+        updated_at: new Date()
+      });
+      
+      setIsEditing(false);
+      setNameError("");
+      setActiveTab("overview");
+      
+      toast({
+        title: t("profile.editInfo.changes"),
+        description: `${t("profile.editInfo.name")}: ${editName.trim()}`,
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: t("common.error"),
+        description: String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -53,15 +111,28 @@ const UserProfile = () => {
               </div>
               <p className="text-gray-400">{user.email}</p>
             </div>
+            
+            <div className="sm:ml-auto mt-4 sm:mt-0">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleEdit}
+                className="text-neon-cyan border-neon-cyan hover:bg-neon-cyan/10"
+              >
+                <Pencil className="mr-1 h-4 w-4" />
+                {t("profile.edit")}
+              </Button>
+            </div>
           </div>
         </div>
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-3 w-full bg-noir-light">
+        <TabsList className="grid grid-cols-4 w-full bg-noir-light">
           <TabsTrigger value="overview">{t("profile.tabs.overview")}</TabsTrigger>
           <TabsTrigger value="stats">{t("profile.tabs.stats")}</TabsTrigger>
           <TabsTrigger value="cases">{t("profile.tabs.cases")}</TabsTrigger>
+          <TabsTrigger value="edit">{t("profile.tabs.edit")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -230,6 +301,66 @@ const UserProfile = () => {
               ) : (
                 <p className="text-gray-400">{t("profile.cases.noInProgress")}</p>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="edit">
+          <Card className="noir-card">
+            <CardHeader>
+              <CardTitle className="text-neon-cyan">{t("profile.tabs.edit")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="name">{t("profile.editInfo.name")}</Label>
+                  <Input 
+                    id="name" 
+                    value={editName} 
+                    onChange={(e) => {
+                      setEditName(e.target.value);
+                      if (e.target.value.trim()) {
+                        setNameError("");
+                      }
+                    }}
+                    className={nameError ? "border-red-500" : ""}
+                  />
+                  {nameError && <p className="text-red-500 text-sm">{nameError}</p>}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email">{t("profile.editInfo.email")}</Label>
+                  <Input id="email" value={user.email} disabled className="bg-noir-accent cursor-not-allowed" />
+                  <p className="text-gray-400 text-xs italic">Email cannot be changed</p>
+                </div>
+                
+                <div className="flex space-x-2 justify-end">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCancel}
+                    className="border-gray-500 text-gray-300"
+                  >
+                    {t("profile.cancel")}
+                  </Button>
+                  <Button 
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="bg-neon-cyan text-black hover:bg-neon-cyan/80"
+                  >
+                    {isSaving ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin mr-2 h-4 w-4 border-2 border-black border-t-transparent rounded-full"></div>
+                        {t("profile.save")}
+                      </div>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        {t("profile.save")}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
