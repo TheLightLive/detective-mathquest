@@ -110,6 +110,23 @@
       "title": "The Missing Variable",
       "description": "A crucial variable has disappeared from an important equation. Find its value to solve the case.",
       "intro": "Detective, we have a situation. An important equation used in calculating the city's power grid has been tampered with. The variable x has been removed, and we need your help to find its value."
+    },
+    "geometry": {
+      "title": "Angles of Suspicion",
+      "description": "The museum's perfect triangle has been altered. Determine the missing angle to restore it.",
+      "intro": "The Museum of Mathematical Wonders reports that their exhibit on geometric shapes has been tampered with. Several key angles in their perfect triangle display have been altered."
+    },
+    "probability": {
+      "title": "Casino Probability",
+      "description": "Investigate unusual winning patterns at the Casino Mathematica using probability theory.",
+      "intro": "The Casino Mathematica has reported unusual winning patterns at their probability table. They suspect someone is using advanced mathematics to beat the system."
+    },
+    "access": {
+      "locked": "This case is locked until you solve prerequisite cases",
+      "needXP": "You need {xp} more XP to unlock this case",
+      "completed": "You've already solved this case!",
+      "available": "This case is available for investigation",
+      "continue": "Continue from where you left off"
     }
   },
   "dashboard": {
@@ -163,5 +180,16 @@
     "masterDetective": "Master Detective",
     "eliteDetective": "Elite Detective",
     "legendaryDetective": "Legendary Detective"
+  },
+  "mathTools": {
+    "calculator": "Calculator",
+    "lessons": "Math Lessons",
+    "reference": "LaTeX Reference",
+    "description": "Advanced mathematical tools to help with your investigations",
+    "calculate": "Calculate",
+    "clear": "Clear",
+    "result": "Result:",
+    "enterExpression": "Enter expression (e.g., 2 + 2)",
+    "symbols": "Common LaTeX symbols used in mathematical investigations"
   }
 }

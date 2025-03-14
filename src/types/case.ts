@@ -18,6 +18,9 @@ export interface Case {
   category?: string; // e.g., 'algebra', 'geometry', 'probability', 'advanced'
   progress?: number; // Progress percentage (0-100)
   completed?: boolean; // Whether the case is completed
+  unlockXP?: number; // XP required to unlock this case
+  locked?: boolean; // Whether the case is locked
+  lockedReason?: string; // Reason why the case is locked
 }
 
 export interface UserProgress {

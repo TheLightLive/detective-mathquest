@@ -8,10 +8,12 @@ import {
   Lightbulb, 
   Calculator,
   Award,
-  Send
+  Send,
+  Lock
 } from "lucide-react";
-import { useCases } from "@/contexts/CasesContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useFirebaseCases } from "@/contexts/FirebaseCasesContext";
+import { useFirebaseAuth } from "@/contexts/FirebaseAuthContext";
+import { useTranslation } from "react-i18next";
 import NavBar from "@/components/NavBar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -207,17 +209,18 @@ const CASE_3_STORY: Record<string, StorySegment> = {
 
 // Map case IDs to their story structures
 const CASE_STORIES: Record<string, Record<string, StorySegment>> = {
-  "case1": CASE_1_STORY,
-  "case2": CASE_2_STORY,
-  "case3": CASE_3_STORY
+  "algebra-case-1": CASE_1_STORY,
+  "geometry-case-1": CASE_2_STORY,
+  "probability-case-1": CASE_3_STORY
 };
 
 const Investigation = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { cases, loadCase, currentCase, updateCaseProgress, completeCase } = useCases();
-  const { user } = useAuth();
+  const { cases, loadCase, currentCase, updateCaseProgress, completeCase, getCaseAccessStatus } = useFirebaseCases();
+  const { user } = useFirebaseAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   
   const [currentSegment, setCurrentSegment] = useState<StorySegment | null>(null);
   const [storyHistory, setStoryHistory] = useState<StorySegment[]>([]);
@@ -225,10 +228,18 @@ const Investigation = () => {
   const [showHint, setShowHint] = useState(false);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
   const [segmentTransition, setSegmentTransition] = useState(false);
+  const [accessError, setAccessError] = useState<string | null>(null);
   
-  // Load the case and initialize the story
+  // Check case access and load the story
   useEffect(() => {
     if (id) {
+      // Check if user can access this case
+      const accessStatus = getCaseAccessStatus(id);
+      if (!accessStatus.canAccess) {
+        setAccessError(accessStatus.message);
+        return;
+      }
+      
       loadCase(id);
       
       // Get the story for this case
@@ -244,9 +255,19 @@ const Investigation = () => {
         if (thisCase && thisCase.progress === 0) {
           updateCaseProgress(id, 10); // Started the case
         }
+      } else {
+        // If no story is defined for this case ID, show a placeholder
+        const placeholderIntro: StorySegment = {
+          id: "placeholder-intro",
+          text: "This case is still being prepared by the detective agency. Check back soon for updates.",
+          type: "narrative",
+          options: []
+        };
+        setCurrentSegment(placeholderIntro);
+        setStoryHistory([placeholderIntro]);
       }
     }
-  }, [id, loadCase, cases, updateCaseProgress]);
+  }, [id, loadCase, cases, updateCaseProgress, getCaseAccessStatus]);
   
   // Function to navigate to the next story segment
   const goToNextSegment = (nextId: string) => {
@@ -280,8 +301,8 @@ const Investigation = () => {
         if (nextSegment.type === "conclusion" && id) {
           completeCase(id);
           toast({
-            title: "Case Solved!",
-            description: `You've earned ${currentCase?.xpReward || 0} XP for solving this case.`,
+            title: t("cases.status.solved"),
+            description: `${t("profile.xp")}: +${currentCase?.xpReward || 0}`,
           });
         }
       }
@@ -305,6 +326,46 @@ const Investigation = () => {
     }
   };
   
+  // Show access error if the case is locked
+  if (accessError) {
+    return (
+      <div className="min-h-screen bg-noir flex flex-col">
+        <NavBar />
+        <div className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/cases")}
+              className="text-gray-400 hover:text-neon-cyan mb-6"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              {t("common.back")}
+            </Button>
+            
+            <Card className="noir-card border-red-700">
+              <CardContent className="p-10 flex flex-col items-center text-center">
+                <Lock className="text-red-500 h-16 w-16 mb-4" />
+                <h2 className="text-2xl font-detective text-neon-pink mb-4">
+                  {t("cases.status.locked")}
+                </h2>
+                <p className="text-gray-300 mb-6">
+                  {accessError}
+                </p>
+                <Button
+                  onClick={() => navigate("/cases")}
+                  className="bg-neon-cyan hover:bg-neon-cyan/80 text-black"
+                >
+                  {t("common.back")}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   // Show a loading state while we wait for the case to load
   if (!currentCase || !currentSegment) {
     return (
@@ -317,7 +378,7 @@ const Investigation = () => {
               <div className="w-3 h-3 rounded-full bg-neon-purple animate-bounce" style={{ animationDelay: "0.2s" }}></div>
               <div className="w-3 h-3 rounded-full bg-neon-pink animate-bounce" style={{ animationDelay: "0.4s" }}></div>
             </div>
-            <p className="text-gray-400">Loading investigation...</p>
+            <p className="text-gray-400">{t("common.loading")}</p>
           </div>
         </div>
       </div>
@@ -339,12 +400,12 @@ const Investigation = () => {
               className="text-gray-400 hover:text-neon-cyan"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Cases
+              {t("common.back")}
             </Button>
             
             <div className="flex items-center">
               <Badge className="bg-neon-cyan/20 text-neon-cyan border-neon-cyan/50 mr-2">
-                {currentCase.category}
+                {t(`profile.stats.${currentCase.category}`)}
               </Badge>
               <Award className="h-4 w-4 text-neon-purple mr-1" />
               <span className="text-neon-purple text-sm">{currentCase.xpReward} XP</span>
@@ -359,7 +420,7 @@ const Investigation = () => {
             
             <div className="flex items-center text-xs text-gray-400 mb-2">
               <Clock className="h-3 w-3 mr-1" />
-              <span>Progress</span>
+              <span>{t("profile.progress")}</span>
               <span className="ml-auto">{currentCase.progress}%</span>
             </div>
             <Progress value={currentCase.progress} className="h-1 bg-noir-accent" />
@@ -412,7 +473,7 @@ const Investigation = () => {
                           className="bg-neon-cyan hover:bg-neon-cyan/80 text-black"
                         >
                           <Send className="h-4 w-4 mr-1" />
-                          Submit
+                          {t("mathTools.calculate")}
                         </Button>
                       </div>
                       
@@ -451,11 +512,11 @@ const Investigation = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => navigate("/calculator")}
+                          onClick={() => navigate("/math-tools")}
                           className="text-neon-cyan border-neon-cyan/30 hover:bg-neon-cyan/10"
                         >
                           <Calculator className="h-4 w-4 mr-1" />
-                          Open Math Tools
+                          {t("dashboard.openMathTools")}
                         </Button>
                       </div>
                     </div>
