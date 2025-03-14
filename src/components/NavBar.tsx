@@ -10,12 +10,12 @@ import {
   LogOut, 
   Calculator 
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useFirebaseAuth } from "@/contexts/FirebaseAuthContext";
 
 const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useFirebaseAuth();
 
   const isActive = (path: string) => {
     return location.pathname === path;
