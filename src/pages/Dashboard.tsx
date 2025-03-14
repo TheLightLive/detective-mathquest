@@ -11,15 +11,15 @@ import {
   Star, 
   Sparkles 
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useCases } from "@/contexts/CasesContext";
+import { useFirebaseAuth } from "@/contexts/FirebaseAuthContext";
+import { useFirebaseCases } from "@/contexts/FirebaseCasesContext";
 import NavBar from "@/components/NavBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
 const Dashboard = () => {
-  const { user } = useAuth();
-  const { cases } = useCases();
+  const { user } = useFirebaseAuth();
+  const { cases } = useFirebaseCases();
 
   const completedCases = cases.filter(c => c.completed).length;
   const inProgressCases = cases.filter(c => !c.completed && c.progress > 0).length;
@@ -55,7 +55,7 @@ const Dashboard = () => {
                   <p className="text-xl font-medium text-neon-cyan">{user?.rank}</p>
                 </div>
                 <p className="text-xs text-gray-400 mt-2">
-                  {350 - user?.xp} XP until next promotion
+                  {350 - (user?.xp || 0)} XP until next promotion
                 </p>
                 <Progress 
                   value={(user?.xp || 0) / 3.5} 
@@ -73,7 +73,7 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center">
-                  <span className="text-3xl font-medium text-neon-pink">{user?.streak}</span>
+                  <span className="text-3xl font-medium text-neon-pink">{user?.streak || 0}</span>
                   <span className="text-xl ml-1 text-gray-300">days</span>
                 </div>
                 <div className="flex space-x-1 mt-2">
