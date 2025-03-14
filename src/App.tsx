@@ -5,7 +5,7 @@ import { ThemeProvider } from '@/components/ui/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { CasesProvider } from './contexts/CasesContext';
 import { FirebaseCasesProvider } from './contexts/FirebaseCasesContext';
-import { useFirebaseAuth } from './contexts/FirebaseAuthContext';
+import { FirebaseAuthProvider, useFirebaseAuth } from './contexts/FirebaseAuthContext';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Cases from './pages/Cases';
@@ -77,26 +77,28 @@ const PublicRoute = ({ children }: ProtectedRouteProps) => {
 const App = () => {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <FirebaseCasesProvider>
-        <Router>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<PublicRoute><Showcase /></PublicRoute>} />
-            <Route path="/signin" element={<PublicRoute><SignIn /></PublicRoute>} />
-            
-            {/* Protected routes */}
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/cases" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
-            <Route path="/investigation/:id" element={<ProtectedRoute><Investigation /></ProtectedRoute>} />
-            <Route path="/math-tools" element={<ProtectedRoute><MathTools /></ProtectedRoute>} />
-            
-            {/* 404 route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
-        </Router>
-      </FirebaseCasesProvider>
+      <FirebaseAuthProvider>
+        <FirebaseCasesProvider>
+          <Router>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<PublicRoute><Showcase /></PublicRoute>} />
+              <Route path="/signin" element={<PublicRoute><SignIn /></PublicRoute>} />
+              
+              {/* Protected routes */}
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/cases" element={<ProtectedRoute><Cases /></ProtectedRoute>} />
+              <Route path="/investigation/:id" element={<ProtectedRoute><Investigation /></ProtectedRoute>} />
+              <Route path="/math-tools" element={<ProtectedRoute><MathTools /></ProtectedRoute>} />
+              
+              {/* 404 route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Toaster />
+          </Router>
+        </FirebaseCasesProvider>
+      </FirebaseAuthProvider>
     </ThemeProvider>
   );
 };
