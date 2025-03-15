@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Calculator, Function, Plus, Minus, X, Divide, SquareRoot, Sigma, PiSquare } from "lucide-react";
+import { Calculator, FunctionSquare, Plus, Minus, X, Divide, SquareRoot as SquareIcon, Sigma, PiSquare } from "lucide-react";
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 
@@ -112,7 +112,7 @@ const MathTools: React.FC = () => {
                 LaTeX Calculator
               </TabsTrigger>
               <TabsTrigger value="formulas" className="flex items-center">
-                <Function className="h-4 w-4 mr-2" />
+                <FunctionSquare className="h-4 w-4 mr-2" />
                 Formula Library
               </TabsTrigger>
             </TabsList>
@@ -147,7 +147,7 @@ const MathTools: React.FC = () => {
                     <Button variant="outline" onClick={() => addSymbol('-')}><Minus className="h-4 w-4" /></Button>
                     <Button variant="outline" onClick={() => addSymbol('*')}><X className="h-4 w-4" /></Button>
                     <Button variant="outline" onClick={() => addSymbol('/')}><Divide className="h-4 w-4" /></Button>
-                    <Button variant="outline" onClick={() => addSymbol('\\sqrt{}')}><SquareRoot className="h-4 w-4" /></Button>
+                    <Button variant="outline" onClick={() => addSymbol('\\sqrt{}')}><SquareIcon className="h-4 w-4" /></Button>
                     <Button variant="outline" onClick={() => addSymbol('\\pi')}><PiSquare className="h-4 w-4" /></Button>
                     <Button variant="outline" onClick={() => addSymbol('\\frac{}{}')}><span>a/b</span></Button>
                     <Button variant="outline" onClick={() => addSymbol('^')}><span>x^n</span></Button>
