@@ -373,8 +373,11 @@ const VisualCalculator: React.FC = () => {
       }
     } else if (direction === 'up' && parent.parentId) {
       setActiveElementId(parent.id);
-    } else if (direction === 'down' && elements[activeElementId].children?.length) {
-      setActiveElementId(elements[activeElementId].children![0]);
+    } else if (direction === 'down') {
+      const activeElement = elements[activeElementId];
+      if (activeElement && activeElement.children && activeElement.children.length > 0) {
+        setActiveElementId(activeElement.children[0]);
+      }
     }
   };
 
@@ -442,11 +445,12 @@ const VisualCalculator: React.FC = () => {
     if (childIndex === -1) return;
     
     const newPlaceholderId = generateId();
-    const newPlaceholder = {
+    const newPlaceholder: MathElement = {
       type: 'placeholder' as const,
       value: '...',
       id: newPlaceholderId,
-      parentId: parent.id
+      parentId: parent.id,
+      children: []
     };
     
     const newChildren = [...(parent.children || [])];
@@ -464,13 +468,13 @@ const VisualCalculator: React.FC = () => {
     delete newElements[activeElementId];
     
     const activeElement = elements[activeElementId];
-    if (activeElement.children?.length) {
+    if (activeElement && activeElement.children && activeElement.children.length > 0) {
       activeElement.children.forEach(childId => {
         const removeChildrenRecursively = (id: string) => {
           const element = newElements[id];
           if (!element) return;
           
-          if (element.children?.length) {
+          if (element.children && element.children.length > 0) {
             element.children.forEach(removeChildrenRecursively);
           }
           
