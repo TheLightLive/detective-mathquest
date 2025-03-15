@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { evaluate } from 'mathjs';
 import { 
-  Calculator, SquareRoot, Plus, Minus, X, Divide, PiSquare, 
-  Function, ChevronRight, ChevronLeft, Brackets, Equal, Sigma, Braces
+  Calculator, Square, Plus, Minus, X, Divide, PiSquare, 
+  BarChart, ChevronRight, ChevronLeft, Brackets, Equal, Sigma, Braces
 } from "lucide-react";
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -38,7 +37,6 @@ const VisualCalculator: React.FC = () => {
   const { toast } = useToast();
   const editorRef = useRef<HTMLDivElement>(null);
 
-  // Generate a unique ID for new elements
   const generateId = () => `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   const renderLatex = (latex: string) => {
@@ -53,7 +51,6 @@ const VisualCalculator: React.FC = () => {
     }
   };
 
-  // Convert the math element tree to LaTeX
   const elementToLatex = (elementId: string): string => {
     const element = elements[elementId];
     if (!element) return '';
@@ -89,16 +86,13 @@ const VisualCalculator: React.FC = () => {
     }
   };
 
-  // Add a number or operator to the equation
   const addElement = (type: MathElement['type'], value: string) => {
     const newId = generateId();
     const newElement: MathElement = { type, value, id: newId };
     
-    // Update the active element or add to root if no active element
     const newElements = { ...elements, [newId]: newElement };
     
     if (activeElementId && elements[activeElementId].type === 'placeholder') {
-      // Replace placeholder with the new element
       const parent = Object.values(elements).find(el => 
         el.children?.includes(activeElementId)
       );
@@ -115,7 +109,6 @@ const VisualCalculator: React.FC = () => {
           };
         }
       } else {
-        // It's the root placeholder
         delete newElements['root'];
         newElements['root'] = {
           ...newElement,
@@ -123,14 +116,12 @@ const VisualCalculator: React.FC = () => {
         };
       }
       
-      // Delete the old placeholder
       if (activeElementId !== 'root') {
         delete newElements[activeElementId];
       }
       
       setActiveElementId(parent ? newId : 'root');
     } else {
-      // Append to root
       newElements['root'] = {
         ...elements['root'],
         children: [...(elements['root'].children || []), newId]
@@ -141,7 +132,6 @@ const VisualCalculator: React.FC = () => {
     setElements(newElements);
   };
 
-  // Add a structure that requires children (like fraction, sqrt, power)
   const addStructure = (type: 'fraction' | 'sqrt' | 'power') => {
     const newId = generateId();
     const placeholderId1 = generateId();
@@ -185,7 +175,6 @@ const VisualCalculator: React.FC = () => {
       newElements[placeholderId2!] = placeholder2;
     }
     
-    // Replace the currently active element if it's a placeholder
     if (activeElementId && elements[activeElementId].type === 'placeholder') {
       const parent = Object.values(elements).find(el => 
         el.children?.includes(activeElementId)
@@ -203,13 +192,11 @@ const VisualCalculator: React.FC = () => {
           };
         }
       } else {
-        // It's the root placeholder
         if (elements['root'].type === 'placeholder') {
           delete newElements['root'];
           newElements['root'] = newElement;
           newElements['root'].id = 'root';
           
-          // Update parent references for children
           childrenIds.forEach(childId => {
             if (newElements[childId]) {
               newElements[childId] = {
@@ -219,7 +206,6 @@ const VisualCalculator: React.FC = () => {
             }
           });
         } else {
-          // Append to root
           newElements['root'] = {
             ...elements['root'],
             children: [...(elements['root'].children || []), newId]
@@ -227,12 +213,10 @@ const VisualCalculator: React.FC = () => {
         }
       }
       
-      // Delete the old placeholder if it's not root
       if (activeElementId !== 'root') {
         delete newElements[activeElementId];
       }
     } else {
-      // Append to root
       newElements['root'] = {
         ...elements['root'],
         children: [...(elements['root'].children || []), newId]
@@ -243,10 +227,8 @@ const VisualCalculator: React.FC = () => {
     setActiveElementId(placeholderId1);
   };
 
-  // Evaluate the expression and show the result
   const calculateResult = () => {
     try {
-      // Convert elements to a mathjs-compatible expression
       const expression = elementToEvaluable('root');
       if (!expression.trim()) {
         toast({
@@ -264,7 +246,6 @@ const VisualCalculator: React.FC = () => {
           : calculatedResult.toFixed(4).replace(/\.?0+$/, '')
         : calculatedResult.toString();
       
-      // Get the LaTeX representation of the input
       const inputLatex = elementToLatex('root');
       
       setResult(`${inputLatex} = ${resultStr}`);
@@ -284,7 +265,6 @@ const VisualCalculator: React.FC = () => {
     }
   };
 
-  // Helper to convert elements to evaluable expressions
   const elementToEvaluable = (elementId: string): string => {
     const element = elements[elementId];
     if (!element) return '';
@@ -316,13 +296,12 @@ const VisualCalculator: React.FC = () => {
         }
         return '0';
       case 'placeholder':
-        return '0'; // Default value for evaluation
+        return '0';
       default:
         return '';
     }
   };
 
-  // Clear the calculator
   const clearCalculator = () => {
     setElements({
       'root': {
@@ -336,7 +315,6 @@ const VisualCalculator: React.FC = () => {
     setResult('');
   };
 
-  // Render the visual equation editor
   const renderEditor = () => {
     return (
       <div 
@@ -392,7 +370,7 @@ const VisualCalculator: React.FC = () => {
             <span className="text-sm">a/b</span>
           </Button>
           <Button variant="outline" onClick={() => addStructure('sqrt')}>
-            <SquareRoot className="h-4 w-4" />
+            <Square className="h-4 w-4" />
           </Button>
           <Button variant="outline" onClick={() => addStructure('power')}>
             <span className="text-sm">x^n</span>
