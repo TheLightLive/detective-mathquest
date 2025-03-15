@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import NavBar from "@/components/NavBar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Calculator, FunctionSquare, Plus, Minus, X, Divide, SquareRoot as SquareIcon, Sigma, PiSquare } from "lucide-react";
+import { Calculator, FunctionSquare, Plus, Minus, X, Divide, SquareRadical, Sigma, PiSquare } from "lucide-react";
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 
@@ -18,7 +17,6 @@ const MathTools: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('calculator');
   const { toast } = useToast();
 
-  // Render LaTeX
   const renderLatex = (latex: string) => {
     try {
       return katex.renderToString(latex, {
@@ -31,7 +29,6 @@ const MathTools: React.FC = () => {
     }
   };
 
-  // Evaluate mathematical expressions
   const evaluateExpression = () => {
     if (!input.trim()) {
       toast({
@@ -43,10 +40,6 @@ const MathTools: React.FC = () => {
     }
 
     try {
-      // Basic evaluation - in a real app, you'd want to use a safer evaluation method
-      // like math.js or a custom parser
-      
-      // Prepare the input - replace common math notations
       let processedInput = input
         .replace(/\\sqrt\{([^}]+)\}/g, 'Math.sqrt($1)')
         .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)')
@@ -56,17 +49,14 @@ const MathTools: React.FC = () => {
         .replace(/\\tan/g, 'Math.tan')
         .replace(/\^/g, '**');
       
-      // DANGER: eval is used for demonstration - in production, use a proper math library
       const result = eval(processedInput);
       
-      // Format the result
       const resultStr = typeof result === 'number' 
         ? Number.isInteger(result) 
           ? result.toString() 
           : result.toFixed(4).replace(/\.?0+$/, '')
         : result.toString();
       
-      // Create LaTeX version of the result
       const latexResult = input + ' = ' + resultStr;
       
       setOutput(latexResult);
@@ -86,12 +76,10 @@ const MathTools: React.FC = () => {
     }
   };
 
-  // Add common symbols to input
   const addSymbol = (symbol: string) => {
     setInput(prev => prev + symbol);
   };
 
-  // Clear the input
   const clearInput = () => {
     setInput('');
     setOutput('');
@@ -147,7 +135,7 @@ const MathTools: React.FC = () => {
                     <Button variant="outline" onClick={() => addSymbol('-')}><Minus className="h-4 w-4" /></Button>
                     <Button variant="outline" onClick={() => addSymbol('*')}><X className="h-4 w-4" /></Button>
                     <Button variant="outline" onClick={() => addSymbol('/')}><Divide className="h-4 w-4" /></Button>
-                    <Button variant="outline" onClick={() => addSymbol('\\sqrt{}')}><SquareIcon className="h-4 w-4" /></Button>
+                    <Button variant="outline" onClick={() => addSymbol('\\sqrt{}')}><SquareRadical className="h-4 w-4" /></Button>
                     <Button variant="outline" onClick={() => addSymbol('\\pi')}><PiSquare className="h-4 w-4" /></Button>
                     <Button variant="outline" onClick={() => addSymbol('\\frac{}{}')}><span>a/b</span></Button>
                     <Button variant="outline" onClick={() => addSymbol('^')}><span>x^n</span></Button>
