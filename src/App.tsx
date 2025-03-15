@@ -8,6 +8,7 @@ import { FirebaseAuthProvider } from "./contexts/FirebaseAuthContext";
 import { FirebaseCasesProvider } from "./contexts/FirebaseCasesContext";
 import Index from "./pages/Index";
 import SignIn from "./pages/SignIn";
+import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import Cases from "./pages/Cases";
 import Investigation from "./pages/Investigation";
@@ -46,6 +47,21 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Guest only routes - redirect authenticated users to dashboard
+const GuestRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useFirebaseAuth();
+  
+  if (loading) {
+    return null;
+  }
+  
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
 // Mobile viewport adjustment for iOS/Android
 const MobileViewportAdjuster = () => {
   const isMobile = useIsMobile();
@@ -76,8 +92,22 @@ const MobileViewportAdjuster = () => {
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/signin" element={<SignIn />} />
+      {/* Guest routes */}
+      <Route path="/" element={
+        <GuestRoute>
+          <Index />
+        </GuestRoute>
+      } />
+      <Route path="/signin" element={
+        <GuestRoute>
+          <SignIn />
+        </GuestRoute>
+      } />
+      <Route path="/signup" element={
+        <GuestRoute>
+          <SignUp />
+        </GuestRoute>
+      } />
       <Route path="/auth/callback" element={<AuthCallback />} />
       <Route path="/showcase" element={<Showcase />} />
       
@@ -113,7 +143,7 @@ const AppRoutes = () => {
         </ProtectedRoute>
       } />
       
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      {/* Catch-all 404 route */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

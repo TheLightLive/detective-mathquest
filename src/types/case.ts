@@ -29,4 +29,5 @@ export interface UserProgress {
   lastSolvedDate: string;
   xp: number;
   rank: string;
+  preferredLanguage?: string; // Preferred language code (e.g., 'en', 'ru', 'uk')
 }

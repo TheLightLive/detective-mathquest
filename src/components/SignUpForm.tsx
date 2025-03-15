@@ -1,38 +1,44 @@
 
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Eye, EyeOff, LogIn, Mail, Lock, User } from "lucide-react";
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Eye, EyeOff, UserPlus, Mail, Lock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useFirebaseAuth } from "@/contexts/FirebaseAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 
-const SignInForm = () => {
+const SignUpForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   
   const navigate = useNavigate();
-  const location = useLocation();
-  const { signIn, signInWithGoogle, loading, error, user } = useFirebaseAuth();
+  const { signUp, signInWithGoogle, loading, error } = useFirebaseAuth();
   const { toast } = useToast();
   const { t } = useTranslation();
-
-  // Redirect if user is already logged in
-  useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
-    }
-  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!name.trim()) {
+      toast({
+        title: t("auth.errors.nameRequired"),
+        description: t("auth.errors.enterName"),
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
-      await signIn(email, password);
+      await signUp(email, password, name);
+      toast({
+        title: t("auth.success.accountCreated"),
+        description: t("auth.success.welcome"),
+      });
     } catch (err) {
-      console.error("Sign in error:", err);
+      console.error("Sign up error:", err);
     }
   };
 
@@ -48,10 +54,10 @@ const SignInForm = () => {
     <div className="w-full max-w-md mx-auto p-6 noir-card animate-fade-in">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-detective text-neon-cyan mb-2">
-          {t("auth.caseAccess")}
+          {t("auth.joinAgency")}
         </h2>
         <p className="text-gray-400">
-          {t("auth.signInContinue")}
+          {t("auth.createProfile")}
         </p>
       </div>
 
@@ -62,6 +68,24 @@ const SignInForm = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="name" className="block text-sm text-gray-300">
+            {t("auth.detectiveName")}
+          </label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+            <Input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t("auth.placeholders.name")}
+              className="pl-10 bg-noir-accent border-noir-accent focus:border-neon-cyan"
+              required
+            />
+          </div>
+        </div>
+
         <div className="space-y-2">
           <label htmlFor="email" className="block text-sm text-gray-300">
             {t("auth.email")}
@@ -116,15 +140,15 @@ const SignInForm = () => {
           className="w-full bg-neon-cyan hover:bg-neon-cyan/80 text-black font-bold transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
         >
           {loading ? (
-            <div className="flex items-center space-x-2 justify-center">
+            <div className="flex items-center space-x-2">
               <div className="w-2 h-2 rounded-full bg-black animate-bounce" style={{ animationDelay: "0s" }}></div>
               <div className="w-2 h-2 rounded-full bg-black animate-bounce" style={{ animationDelay: "0.2s" }}></div>
               <div className="w-2 h-2 rounded-full bg-black animate-bounce" style={{ animationDelay: "0.4s" }}></div>
             </div>
           ) : (
             <div className="flex items-center justify-center">
-              <LogIn className="mr-2 h-4 w-4" />
-              {t("auth.signIn")}
+              <UserPlus className="mr-2 h-4 w-4" />
+              {t("auth.signUp")}
             </div>
           )}
         </Button>
@@ -168,10 +192,10 @@ const SignInForm = () => {
 
         <div className="text-center mt-6">
           <Link
-            to="/signup"
+            to="/signin"
             className="text-neon-purple hover:text-neon-purple/80 text-sm transition-colors duration-200"
           >
-            {t("auth.needAccount")}
+            {t("auth.alreadyHaveAccount")}
           </Link>
         </div>
       </form>
@@ -179,4 +203,4 @@ const SignInForm = () => {
   );
 };
 
-export default SignInForm;
+export default SignUpForm;

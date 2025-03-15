@@ -5,27 +5,30 @@ import { Sparkles } from "lucide-react";
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
+  const [animate, setAnimate] = useState(false);
   const navigate = useNavigate();
 
-  // Simulate loading
+  // Start animation sequence
   useEffect(() => {
-    const timer = setTimeout(() => {
+    // Show loading animation for 2 seconds
+    const loadingTimer = setTimeout(() => {
       setLoading(false);
+      setAnimate(true);
     }, 2000);
     
-    return () => clearTimeout(timer);
+    return () => clearTimeout(loadingTimer);
   }, []);
 
   // Navigate to showcase page after animation
   useEffect(() => {
-    if (!loading) {
-      const timer = setTimeout(() => {
+    if (animate) {
+      const navigateTimer = setTimeout(() => {
         navigate("/showcase");
-      }, 1500);
+      }, 1800);
       
-      return () => clearTimeout(timer);
+      return () => clearTimeout(navigateTimer);
     }
-  }, [loading, navigate]);
+  }, [animate, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-noir relative overflow-hidden">
@@ -54,15 +57,38 @@ const Index = () => {
       
       <div className="text-center z-10">
         <div className="relative mb-4">
-          <h1 className={`text-6xl font-detective ${loading ? 'scale-100 opacity-100' : 'scale-110 opacity-0'} transition-all duration-1000`}>
-            Math<span className="neon-text">Detective</span>
+          <h1 
+            className={`text-6xl font-detective transition-all duration-1000 ${
+              loading 
+                ? 'scale-90 opacity-70 text-white' 
+                : animate 
+                  ? 'scale-110 opacity-100' 
+                  : 'scale-100 opacity-100'
+            }`}
+          >
+            Math
+            <span 
+              className={`transition-all duration-1500 ${
+                loading 
+                  ? 'text-white' 
+                  : 'text-neon-purple'
+              }`}
+            >
+              Detective
+            </span>
           </h1>
-          <div className="absolute -top-4 -right-6">
+          <div className={`absolute -top-4 -right-6 transition-all duration-700 ${loading ? 'opacity-0 scale-0' : 'opacity-100 scale-100'}`}>
             <Sparkles className="w-8 h-8 text-neon-purple animate-pulse" />
           </div>
         </div>
         
-        <div className={`mt-6 transition-opacity duration-1000 ${loading ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`mt-6 transition-all duration-1000 ${
+          loading 
+            ? 'opacity-0 translate-y-4' 
+            : animate 
+              ? 'opacity-100 translate-y-0' 
+              : 'opacity-0 translate-y-4'
+        }`}>
           <p className="text-xl text-gray-300 mb-8">Solve mysteries. Master mathematics.</p>
         </div>
         

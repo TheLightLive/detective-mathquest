@@ -63,68 +63,58 @@ const NavBar = () => {
             <div className="flex space-x-4">
               <Link
                 to="/dashboard"
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                className={`px-3 py-2 rounded-md text-sm font-medium flex items-center justify-center ${
                   isActive("/dashboard") 
                     ? "text-neon-cyan bg-noir-accent" 
                     : "text-gray-300 hover:text-neon-cyan hover:bg-noir-accent"
                 }`}
               >
-                <div className="flex items-center">
-                  <Home className="mr-1 h-4 w-4" />
-                  {t("navigation.dashboard")}
-                </div>
+                <Home className="mr-1 h-4 w-4" />
+                {t("navigation.dashboard")}
               </Link>
               
               <Link
                 to="/cases"
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                className={`px-3 py-2 rounded-md text-sm font-medium flex items-center justify-center ${
                   isActive("/cases") 
                     ? "text-neon-cyan bg-noir-accent" 
                     : "text-gray-300 hover:text-neon-cyan hover:bg-noir-accent"
                 }`}
               >
-                <div className="flex items-center">
-                  <Briefcase className="mr-1 h-4 w-4" />
-                  {t("navigation.cases")}
-                </div>
+                <Briefcase className="mr-1 h-4 w-4" />
+                {t("navigation.cases")}
               </Link>
               
               <Link
-                to="/calculator"
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  isActive("/calculator") 
+                to="/math-tools"
+                className={`px-3 py-2 rounded-md text-sm font-medium flex items-center justify-center ${
+                  isActive("/math-tools") 
                     ? "text-neon-cyan bg-noir-accent" 
                     : "text-gray-300 hover:text-neon-cyan hover:bg-noir-accent"
                 }`}
               >
-                <div className="flex items-center">
-                  <Calculator className="mr-1 h-4 w-4" />
-                  {t("navigation.mathTools")}
-                </div>
+                <Calculator className="mr-1 h-4 w-4" />
+                {t("navigation.mathTools")}
               </Link>
               
               <Link
                 to="/profile"
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                className={`px-3 py-2 rounded-md text-sm font-medium flex items-center justify-center ${
                   isActive("/profile") 
                     ? "text-neon-cyan bg-noir-accent" 
                     : "text-gray-300 hover:text-neon-cyan hover:bg-noir-accent"
                 }`}
               >
-                <div className="flex items-center">
-                  <UserCircle className="mr-1 h-4 w-4" />
-                  {t("navigation.profile")}
-                </div>
+                <UserCircle className="mr-1 h-4 w-4" />
+                {t("navigation.profile")}
               </Link>
               
               <button
                 onClick={signOut}
-                className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-neon-pink hover:bg-noir-accent"
+                className="px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-neon-pink hover:bg-noir-accent flex items-center justify-center"
               >
-                <div className="flex items-center">
-                  <LogOut className="mr-1 h-4 w-4" />
-                  {t("navigation.signOut")}
-                </div>
+                <LogOut className="mr-1 h-4 w-4" />
+                {t("navigation.signOut")}
               </button>
               
               <LanguageSwitcher />
@@ -168,9 +158,9 @@ const NavBar = () => {
             </Link>
             
             <Link
-              to="/calculator"
+              to="/math-tools"
               className={`block px-3 py-2 rounded-md text-base font-medium ${
-                isActive("/calculator") 
+                isActive("/math-tools") 
                   ? "text-neon-cyan bg-noir" 
                   : "text-gray-300 hover:text-neon-cyan hover:bg-noir"
               }`}
