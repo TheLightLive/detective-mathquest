@@ -17,7 +17,7 @@ const MathTools: React.FC = () => {
         <div className="max-w-6xl mx-auto">
           <h1 className="text-3xl font-detective text-neon-cyan mb-6">Math Tools</h1>
           
-          <Tabs defaultValue="calculator" className="space-y-6" value={activeTab} onValueChange={setActiveTab}>
+          <Tabs defaultValue="calculator" className="space-y-4" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="bg-noir-accent">
               <TabsTrigger value="calculator" className="flex items-center">
                 <Calculator className="h-4 w-4 mr-2" />
@@ -29,11 +29,11 @@ const MathTools: React.FC = () => {
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="calculator" className="space-y-6">
+            <TabsContent value="calculator" className="space-y-4">
               <VisualCalculator />
             </TabsContent>
             
-            <TabsContent value="formulas" className="space-y-6">
+            <TabsContent value="formulas" className="space-y-4">
               <FormulaLibrary />
             </TabsContent>
           </Tabs>

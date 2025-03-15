@@ -38,6 +38,7 @@ const VisualCalculator: React.FC = () => {
   const [currentTab, setCurrentTab] = useState<string>('main'); // 'main', 'functions', 'trig', 'calculus'
   const { toast } = useToast();
   const editorRef = useRef<HTMLDivElement>(null);
+  const [cursorPosition, setCursorPosition] = useState<{elementId: string, position: number}>({elementId: 'root', position: 0});
 
   const generateId = () => `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -102,7 +103,7 @@ const VisualCalculator: React.FC = () => {
         return '_{}';
       case 'placeholder':
         if (element.selected) {
-          return '\\underline{\\text{' + element.value + '}}';
+          return '\\boxed{\\color{cyan}{\\text{' + element.value + '}}}';
         }
         return '\\text{' + element.value + '}';
       default:
@@ -111,8 +112,22 @@ const VisualCalculator: React.FC = () => {
   };
 
   const getInsertionTarget = (): { parentId: string, index: number } => {
-    if (activeElementId === 'root' && elements['root'].type === 'placeholder') {
-      return { parentId: '', index: 0 };
+    if (activeElementId && elements[activeElementId]?.type === 'placeholder') {
+      const activeElement = elements[activeElementId];
+      const parent = Object.values(elements).find(el => 
+        el.children?.includes(activeElementId)
+      );
+      
+      if (parent) {
+        const index = parent.children?.indexOf(activeElementId) ?? 0;
+        return { parentId: parent.id, index };
+      } else if (activeElementId === 'root') {
+        return { parentId: '', index: 0 };
+      }
+    }
+    
+    if (activeElementId === 'root') {
+      return { parentId: 'root', index: elements['root'].children?.length || 0 };
     }
     
     const parent = Object.values(elements).find(el => 
@@ -129,11 +144,16 @@ const VisualCalculator: React.FC = () => {
 
   const addElement = (type: MathElement['type'], value: string) => {
     const newId = generateId();
-    const newElement: MathElement = { type, value, id: newId };
+    const newElement: MathElement = { 
+      type, 
+      value, 
+      id: newId,
+      children: type === 'placeholder' ? [] : undefined
+    };
     
     let newElements = { ...elements };
     
-    if (activeElementId && elements[activeElementId].type === 'placeholder') {
+    if (activeElementId && elements[activeElementId]?.type === 'placeholder') {
       const parent = Object.values(elements).find(el => 
         el.children?.includes(activeElementId)
       );
@@ -141,29 +161,39 @@ const VisualCalculator: React.FC = () => {
       if (parent) {
         const parentId = parent.id;
         const childIndex = parent.children?.indexOf(activeElementId) ?? -1;
+        
         if (childIndex !== -1) {
           const newChildren = [...(parent.children || [])];
           newChildren[childIndex] = newId;
+          
           newElements[parentId] = {
             ...parent,
             children: newChildren
           };
+          
+          newElements[newId] = newElement;
+          
+          if (activeElementId !== 'root') {
+            delete newElements[activeElementId];
+          }
         }
       } else if (activeElementId === 'root') {
-        newElements = {
-          ...newElements,
-          'root': {
-            ...newElement,
+        if (type === 'placeholder') {
+          newElements['root'] = {
+            ...newElements['root'],
+            value
+          };
+        } else {
+          newElements['root'] = {
+            type: 'parentheses',
+            value: 'parentheses',
             id: 'root',
-            children: []
-          }
-        };
+            children: [newId]
+          };
+          
+          newElements[newId] = newElement;
+        }
       }
-      
-      if (activeElementId !== 'root') {
-        delete newElements[activeElementId];
-      }
-      
     } else {
       const { parentId, index } = getInsertionTarget();
       
@@ -171,22 +201,24 @@ const VisualCalculator: React.FC = () => {
         const parent = newElements[parentId];
         const newChildren = [...(parent.children || [])];
         newChildren.splice(index, 0, newId);
+        
         newElements[parentId] = {
           ...parent,
           children: newChildren
         };
+        
+        newElements[newId] = newElement;
       } else {
         newElements['root'] = {
-          ...newElement,
-          id: 'root',
-          children: []
+          ...elements['root'],
+          children: [...(elements['root'].children || []), newId]
         };
       }
     }
     
-    newElements[newId] = newElement;
     setElements(newElements);
     setActiveElementId(newId);
+    setCursorPosition({elementId: newId, position: 0});
   };
 
   const addStructure = (type: 'fraction' | 'sqrt' | 'power' | 'parentheses') => {
@@ -198,7 +230,8 @@ const VisualCalculator: React.FC = () => {
       type: 'placeholder',
       value: '...',
       id: placeholderId1,
-      parentId: newId
+      parentId: newId,
+      children: []
     };
     
     let placeholder2: MathElement | undefined;
@@ -207,7 +240,8 @@ const VisualCalculator: React.FC = () => {
         type: 'placeholder',
         value: '...',
         id: placeholderId2,
-        parentId: newId
+        parentId: newId,
+        children: []
       };
     }
     
@@ -232,7 +266,7 @@ const VisualCalculator: React.FC = () => {
       newElements[placeholderId2!] = placeholder2;
     }
     
-    if (activeElementId && elements[activeElementId].type === 'placeholder') {
+    if (activeElementId && elements[activeElementId]?.type === 'placeholder') {
       const parent = Object.values(elements).find(el => 
         el.children?.includes(activeElementId)
       );
@@ -240,13 +274,19 @@ const VisualCalculator: React.FC = () => {
       if (parent) {
         const parentId = parent.id;
         const childIndex = parent.children?.indexOf(activeElementId) ?? -1;
+        
         if (childIndex !== -1) {
           const newChildren = [...(parent.children || [])];
           newChildren[childIndex] = newId;
+          
           newElements[parentId] = {
             ...parent,
             children: newChildren
           };
+          
+          if (activeElementId !== 'root') {
+            delete newElements[activeElementId];
+          }
         }
       } else if (activeElementId === 'root') {
         if (elements['root'].type === 'placeholder') {
@@ -270,10 +310,6 @@ const VisualCalculator: React.FC = () => {
           };
         }
       }
-      
-      if (activeElementId !== 'root') {
-        delete newElements[activeElementId];
-      }
     } else {
       newElements['root'] = {
         ...elements['root'],
@@ -283,6 +319,7 @@ const VisualCalculator: React.FC = () => {
     
     setElements(newElements);
     setActiveElementId(placeholderId1);
+    setCursorPosition({elementId: placeholderId1, position: 0});
   };
 
   const elementToEvaluable = (elementId: string): string => {
@@ -351,6 +388,7 @@ const VisualCalculator: React.FC = () => {
       : 0;
       
     setActiveElementId(placeholders[nextIndex].id);
+    setCursorPosition({elementId: placeholders[nextIndex].id, position: 0});
   };
 
   const navigateStructure = (direction: 'up' | 'down' | 'left' | 'right') => {
@@ -370,13 +408,16 @@ const VisualCalculator: React.FC = () => {
         
       if (newIndex !== currentIndex) {
         setActiveElementId(parent.children[newIndex]);
+        setCursorPosition({elementId: parent.children[newIndex], position: 0});
       }
     } else if (direction === 'up' && parent.parentId) {
       setActiveElementId(parent.id);
+      setCursorPosition({elementId: parent.id, position: 0});
     } else if (direction === 'down') {
       const activeElement = elements[activeElementId];
       if (activeElement && activeElement.children && activeElement.children.length > 0) {
         setActiveElementId(activeElement.children[0]);
+        setCursorPosition({elementId: activeElement.children[0], position: 0});
       }
     }
   };
@@ -429,6 +470,7 @@ const VisualCalculator: React.FC = () => {
       }
     });
     setActiveElementId('root');
+    setCursorPosition({elementId: 'root', position: 0});
     setResult('');
   };
 
@@ -487,6 +529,7 @@ const VisualCalculator: React.FC = () => {
     
     setElements(newElements);
     setActiveElementId(newPlaceholderId);
+    setCursorPosition({elementId: newPlaceholderId, position: 0});
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -508,96 +551,144 @@ const VisualCalculator: React.FC = () => {
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       navigateStructure('down');
+    } else if (/^[0-9+\-*/=.()a-zA-Z,]$/.test(e.key)) {
+      if (/^[0-9.]$/.test(e.key)) {
+        addElement('number', e.key);
+      } else if (/^[+\-*/=]$/.test(e.key)) {
+        addElement('operator', e.key);
+      } else if (/^[a-zA-Z]$/.test(e.key)) {
+        addElement('variable', e.key);
+      } else if (e.key === '(') {
+        addStructure('parentheses');
+      }
     }
   };
 
   const renderTabContent = () => {
+    const buttonClass = "font-serif text-[15px] leading-tight katex-font";
+    
     switch (currentTab) {
       case 'main':
         return (
           <>
-            <div className="grid grid-cols-4 gap-2">
-              <Button variant="outline" onClick={() => addElement('number', '7')}>7</Button>
-              <Button variant="outline" onClick={() => addElement('number', '8')}>8</Button>
-              <Button variant="outline" onClick={() => addElement('number', '9')}>9</Button>
-              <Button variant="outline" onClick={() => addElement('operator', '/')}><Divide className="h-4 w-4" /></Button>
+            <div className="grid grid-cols-4 gap-1.5">
+              <Button variant="outline" onClick={() => addElement('number', '7')} className={buttonClass} size="sm">7</Button>
+              <Button variant="outline" onClick={() => addElement('number', '8')} className={buttonClass} size="sm">8</Button>
+              <Button variant="outline" onClick={() => addElement('number', '9')} className={buttonClass} size="sm">9</Button>
+              <Button variant="outline" onClick={() => addElement('operator', '/')} className={buttonClass} size="sm"><Divide className="h-3.5 w-3.5" /></Button>
               
-              <Button variant="outline" onClick={() => addElement('number', '4')}>4</Button>
-              <Button variant="outline" onClick={() => addElement('number', '5')}>5</Button>
-              <Button variant="outline" onClick={() => addElement('number', '6')}>6</Button>
-              <Button variant="outline" onClick={() => addElement('operator', '*')}><X className="h-4 w-4" /></Button>
+              <Button variant="outline" onClick={() => addElement('number', '4')} className={buttonClass} size="sm">4</Button>
+              <Button variant="outline" onClick={() => addElement('number', '5')} className={buttonClass} size="sm">5</Button>
+              <Button variant="outline" onClick={() => addElement('number', '6')} className={buttonClass} size="sm">6</Button>
+              <Button variant="outline" onClick={() => addElement('operator', '*')} className={buttonClass} size="sm"><X className="h-3.5 w-3.5" /></Button>
               
-              <Button variant="outline" onClick={() => addElement('number', '1')}>1</Button>
-              <Button variant="outline" onClick={() => addElement('number', '2')}>2</Button>
-              <Button variant="outline" onClick={() => addElement('number', '3')}>3</Button>
-              <Button variant="outline" onClick={() => addElement('operator', '-')}><Minus className="h-4 w-4" /></Button>
+              <Button variant="outline" onClick={() => addElement('number', '1')} className={buttonClass} size="sm">1</Button>
+              <Button variant="outline" onClick={() => addElement('number', '2')} className={buttonClass} size="sm">2</Button>
+              <Button variant="outline" onClick={() => addElement('number', '3')} className={buttonClass} size="sm">3</Button>
+              <Button variant="outline" onClick={() => addElement('operator', '-')} className={buttonClass} size="sm"><Minus className="h-3.5 w-3.5" /></Button>
               
-              <Button variant="outline" onClick={() => addElement('number', '0')}>0</Button>
-              <Button variant="outline" onClick={() => addElement('number', '.')}>.</Button>
-              <Button variant="outline" onClick={() => addElement('variable', 'x')}>x</Button>
-              <Button variant="outline" onClick={() => addElement('operator', '+')}><Plus className="h-4 w-4" /></Button>
+              <Button variant="outline" onClick={() => addElement('number', '0')} className={buttonClass} size="sm">0</Button>
+              <Button variant="outline" onClick={() => addElement('number', '.')} className={buttonClass} size="sm">.</Button>
+              <Button variant="outline" onClick={() => addElement('variable', 'x')} className={buttonClass} size="sm">x</Button>
+              <Button variant="outline" onClick={() => addElement('operator', '+')} className={buttonClass} size="sm"><Plus className="h-3.5 w-3.5" /></Button>
             </div>
             
-            <div className="grid grid-cols-4 gap-2">
-              <Button variant="outline" onClick={() => addStructure('fraction')}>
-                <span className="text-sm">a/b</span>
+            <div className="grid grid-cols-4 gap-1.5">
+              <Button variant="outline" onClick={() => addStructure('fraction')} className={buttonClass} size="sm">
+                <span dangerouslySetInnerHTML={{ __html: renderLatex("\\frac{a}{b}") }} />
               </Button>
-              <Button variant="outline" onClick={() => addStructure('sqrt')}>
-                <Square className="h-4 w-4" />
+              <Button variant="outline" onClick={() => addStructure('sqrt')} className={buttonClass} size="sm">
+                <span dangerouslySetInnerHTML={{ __html: renderLatex("\\sqrt{x}") }} />
               </Button>
-              <Button variant="outline" onClick={() => addStructure('power')}>
-                <span className="text-sm">x^n</span>
+              <Button variant="outline" onClick={() => addStructure('power')} className={buttonClass} size="sm">
+                <span dangerouslySetInnerHTML={{ __html: renderLatex("x^n") }} />
               </Button>
-              <Button variant="outline" onClick={() => addElement('variable', 'pi')}>
-                <PiSquare className="h-4 w-4" />
+              <Button variant="outline" onClick={() => addElement('variable', 'pi')} className={buttonClass} size="sm">
+                <span dangerouslySetInnerHTML={{ __html: renderLatex("\\pi") }} />
               </Button>
               
-              <Button variant="outline" onClick={() => addStructure('parentheses')}>
-                <Brackets className="h-4 w-4" />
+              <Button variant="outline" onClick={() => addStructure('parentheses')} className={buttonClass} size="sm">
+                <Brackets className="h-3.5 w-3.5" />
               </Button>
-              <Button variant="outline" onClick={() => addElement('variable', 'e')}>e</Button>
-              <Button variant="outline" onClick={() => addElement('operator', '=')}>=</Button>
-              <Button variant="outline" onClick={deleteActiveElement}>Del</Button>
+              <Button variant="outline" onClick={() => addElement('variable', 'e')} className={buttonClass} size="sm">
+                <span dangerouslySetInnerHTML={{ __html: renderLatex("e") }} />
+              </Button>
+              <Button variant="outline" onClick={() => addElement('operator', '=')} className={buttonClass} size="sm">=</Button>
+              <Button variant="outline" onClick={deleteActiveElement} className={buttonClass} size="sm">Del</Button>
             </div>
           </>
         );
       case 'functions':
         return (
-          <div className="grid grid-cols-4 gap-2">
-            <Button variant="outline" onClick={() => addElement('function', 'sin')}>sin</Button>
-            <Button variant="outline" onClick={() => addElement('function', 'cos')}>cos</Button>
-            <Button variant="outline" onClick={() => addElement('function', 'tan')}>tan</Button>
-            <Button variant="outline" onClick={() => addElement('function', 'cot')}>cot</Button>
+          <div className="grid grid-cols-4 gap-1.5">
+            <Button variant="outline" onClick={() => addElement('function', 'sin')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\sin") }} />
+            </Button>
+            <Button variant="outline" onClick={() => addElement('function', 'cos')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\cos") }} />
+            </Button>
+            <Button variant="outline" onClick={() => addElement('function', 'tan')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\tan") }} />
+            </Button>
+            <Button variant="outline" onClick={() => addElement('function', 'cot')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\cot") }} />
+            </Button>
             
-            <Button variant="outline" onClick={() => addElement('function', 'arcsin')}>arcsin</Button>
-            <Button variant="outline" onClick={() => addElement('function', 'arccos')}>arccos</Button>
-            <Button variant="outline" onClick={() => addElement('function', 'arctan')}>arctan</Button>
-            <Button variant="outline" onClick={() => addElement('function', 'arccot')}>arccot</Button>
+            <Button variant="outline" onClick={() => addElement('function', 'arcsin')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\arcsin") }} />
+            </Button>
+            <Button variant="outline" onClick={() => addElement('function', 'arccos')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\arccos") }} />
+            </Button>
+            <Button variant="outline" onClick={() => addElement('function', 'arctan')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\arctan") }} />
+            </Button>
+            <Button variant="outline" onClick={() => addElement('function', 'arccot')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\arccot") }} />
+            </Button>
             
-            <Button variant="outline" onClick={() => addElement('function', 'log')}>log</Button>
-            <Button variant="outline" onClick={() => addElement('function', 'ln')}>ln</Button>
-            <Button variant="outline" onClick={() => addElement('function', 'exp')}>exp</Button>
-            <Button variant="outline" onClick={() => addElement('function', 'log10')}>log₁₀</Button>
+            <Button variant="outline" onClick={() => addElement('function', 'log')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\log") }} />
+            </Button>
+            <Button variant="outline" onClick={() => addElement('function', 'ln')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\ln") }} />
+            </Button>
+            <Button variant="outline" onClick={() => addElement('function', 'exp')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\exp") }} />
+            </Button>
+            <Button variant="outline" onClick={() => addElement('function', 'log10')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\log_{10}") }} />
+            </Button>
           </div>
         );
       case 'calculus':
         return (
-          <div className="grid grid-cols-4 gap-2">
-            <Button variant="outline" onClick={() => addElement('function', 'diff')}>
-              <span className="text-sm">d/dx</span>
+          <div className="grid grid-cols-4 gap-1.5">
+            <Button variant="outline" onClick={() => addElement('function', 'diff')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\frac{d}{dx}") }} />
             </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'int')}>
-              <span className="text-sm">∫</span>
+            <Button variant="outline" onClick={() => addElement('function', 'int')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\int") }} />
             </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'sum')}>
-              <Sigma className="h-4 w-4" />
+            <Button variant="outline" onClick={() => addElement('function', 'sum')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\sum") }} />
             </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'lim')}>lim</Button>
+            <Button variant="outline" onClick={() => addElement('function', 'lim')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\lim") }} />
+            </Button>
             
-            <Button variant="outline" onClick={() => addElement('variable', 'dx')}>dx</Button>
-            <Button variant="outline" onClick={() => addElement('variable', 'dy')}>dy</Button>
-            <Button variant="outline" onClick={() => addElement('variable', 'dt')}>dt</Button>
-            <Button variant="outline" onClick={() => addElement('function', 'prod')}>∏</Button>
+            <Button variant="outline" onClick={() => addElement('variable', 'dx')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("dx") }} />
+            </Button>
+            <Button variant="outline" onClick={() => addElement('variable', 'dy')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("dy") }} />
+            </Button>
+            <Button variant="outline" onClick={() => addElement('variable', 'dt')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("dt") }} />
+            </Button>
+            <Button variant="outline" onClick={() => addElement('function', 'prod')} className={buttonClass} size="sm">
+              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\prod") }} />
+            </Button>
           </div>
         );
       default:
@@ -660,6 +751,26 @@ const VisualCalculator: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    document.body.classList.add('katex-fonts-enabled');
+    
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+      .katex-font {
+        font-family: KaTeX_Main, 'Times New Roman', serif;
+      }
+      .katex-fonts-enabled button {
+        font-family: KaTeX_Main, 'Times New Roman', serif;
+      }
+    `;
+    document.head.appendChild(styleElement);
+    
+    return () => {
+      document.body.classList.remove('katex-fonts-enabled');
+      document.head.removeChild(styleElement);
+    };
+  }, []);
+
   return (
     <Card className="noir-card">
       <CardHeader>
@@ -668,56 +779,61 @@ const VisualCalculator: React.FC = () => {
           Create beautiful, interactive mathematical expressions and calculate results.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         {renderEditor()}
         
         <div className="flex space-x-2 overflow-x-auto">
           <Button 
             variant={currentTab === 'main' ? "default" : "outline"} 
             onClick={() => setCurrentTab('main')}
-            className="flex-shrink-0"
+            className="flex-shrink-0 font-serif katex-font"
+            size="sm"
           >
-            <Calculator className="h-4 w-4 mr-2" />
+            <Calculator className="h-3.5 w-3.5 mr-1" />
             Basic
           </Button>
           <Button 
             variant={currentTab === 'functions' ? "default" : "outline"} 
             onClick={() => setCurrentTab('functions')}
-            className="flex-shrink-0"
+            className="flex-shrink-0 font-serif katex-font"
+            size="sm"
           >
-            <BarChart className="h-4 w-4 mr-2" />
+            <BarChart className="h-3.5 w-3.5 mr-1" />
             Functions
           </Button>
           <Button 
             variant={currentTab === 'calculus' ? "default" : "outline"} 
             onClick={() => setCurrentTab('calculus')}
-            className="flex-shrink-0"
+            className="flex-shrink-0 font-serif katex-font"
+            size="sm"
           >
-            <Sigma className="h-4 w-4 mr-2" />
+            <Sigma className="h-3.5 w-3.5 mr-1" />
             Calculus
           </Button>
         </div>
         
         {renderTabContent()}
         
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 mt-2">
           <Button 
             onClick={clearCalculator} 
             variant="outline"
-            className="flex-1"
+            className="flex-1 font-serif katex-font"
+            size="sm"
           >
             Clear
           </Button>
           <Button 
             onClick={calculateResult} 
-            className="flex-1 bg-neon-cyan hover:bg-neon-cyan/80 text-black"
+            className="flex-1 bg-neon-cyan hover:bg-neon-cyan/80 text-black font-serif katex-font"
+            size="sm"
           >
             Calculate
           </Button>
         </div>
         
         {result && (
-          <div className="mt-6">
+          <div className="mt-4">
             <Label>Result</Label>
             <div 
               className="p-4 bg-noir-accent rounded-md overflow-x-auto mt-2"
@@ -727,7 +843,7 @@ const VisualCalculator: React.FC = () => {
         )}
         
         {history.length > 0 && (
-          <div className="mt-6">
+          <div className="mt-4">
             <Label>History</Label>
             <div className="space-y-2 mt-2 max-h-60 overflow-y-auto">
               {history.map((item, index) => (
@@ -745,8 +861,8 @@ const VisualCalculator: React.FC = () => {
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between border-t border-gray-800 pt-4">
-        <p className="text-sm text-gray-400">Click on elements to edit them, use Tab to navigate between inputs</p>
+      <CardFooter className="flex justify-between border-t border-gray-800 pt-4 text-xs">
+        <p className="text-gray-400">Use arrow keys to navigate equations, Tab for placeholders, type directly or use buttons</p>
       </CardFooter>
     </Card>
   );

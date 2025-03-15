@@ -51,11 +51,37 @@ export const evaluateExpression = (expr: MathExpression): number => {
 
 export const parseStringToExpression = (input: string): MathExpression => {
   // This is a simplified parser for demonstration
-  // A real implementation would need a proper math expression parser
   try {
     return { type: 'group', value: 'group', children: [{ type: 'number', value: input }] };
   } catch (error) {
     console.error('Error parsing expression:', error);
     return { type: 'number', value: '0' };
+  }
+};
+
+// LaTeX specific utilities
+export const latexToMathJs = (latex: string): string => {
+  // This is a very simplified converter
+  return latex
+    .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, "($1)/($2)")
+    .replace(/\\sqrt\{([^}]*)\}/g, "sqrt($1)")
+    .replace(/\^{([^}]*)}/g, "^($1)")
+    .replace(/\\sin/g, "sin")
+    .replace(/\\cos/g, "cos")
+    .replace(/\\tan/g, "tan")
+    .replace(/\\ln/g, "ln")
+    .replace(/\\log/g, "log")
+    .replace(/\\pi/g, "pi")
+    .replace(/\\times/g, "*")
+    .replace(/\\div/g, "/");
+};
+
+export const evaluateLatex = (latex: string): number => {
+  try {
+    const mathJsExpr = latexToMathJs(latex);
+    return evaluate(mathJsExpr);
+  } catch (error) {
+    console.error('Error evaluating LaTeX:', error);
+    return NaN;
   }
 };
