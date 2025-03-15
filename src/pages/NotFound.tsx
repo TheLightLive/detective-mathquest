@@ -1,7 +1,7 @@
 
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
-import { MagnifyingGlass, Home, ArrowLeft } from "lucide-react";
+import { Search, Home, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const NotFound = () => {
@@ -43,7 +43,7 @@ const NotFound = () => {
         <div className="flex justify-center mb-6">
           <div className="relative">
             <div className="w-24 h-24 flex items-center justify-center rounded-full bg-noir-accent border-2 border-neon-purple">
-              <MagnifyingGlass className="h-12 w-12 text-neon-cyan" />
+              <Search className="h-12 w-12 text-neon-cyan" />
             </div>
             <div className="absolute -top-2 -right-2 w-8 h-8 flex items-center justify-center rounded-full bg-noir border-2 border-neon-cyan text-neon-cyan font-bold text-lg">?</div>
           </div>
