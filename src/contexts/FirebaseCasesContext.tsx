@@ -18,6 +18,9 @@ type FirebaseCasesContextType = {
   refreshCases: () => Promise<void>;
   currentCase?: Case;
   loadCase: (caseId: string) => void;
+  isCaseAccessible: (caseId: string) => boolean;
+  getRequiredXp: (caseId: string) => number;
+  getMissingPrerequisites: (caseId: string) => string[];
 };
 
 const FirebaseCasesContext = createContext<FirebaseCasesContextType | undefined>(undefined);
@@ -53,6 +56,11 @@ export const FirebaseCasesProvider: React.FC<{ children: React.ReactNode }> = ({
       const userProgressSnapshot = await getDocs(q);
       const userProgressData = userProgressSnapshot.docs.map(doc => doc.data());
       
+      // Get user profile for XP
+      const userProfileRef = doc(db, "profiles", user.id);
+      const userProfileSnap = await getDoc(userProfileRef);
+      const userXp = userProfileSnap.exists() ? userProfileSnap.data().xp || 0 : 0;
+      
       const processedCases = casesData.map((caseItem: any) => {
         const userProgress = userProgressData.find((p: any) => p.case_id === caseItem.id);
         
@@ -72,19 +80,42 @@ export const FirebaseCasesProvider: React.FC<{ children: React.ReactNode }> = ({
         const progress = userProgress ? 
           (userProgress.status === "solved" ? 100 : (userProgress.status === "in_progress" ? userProgress.progress || 50 : 0)) : 0;
         
+        // Determine case status based on prerequisites and XP requirements
+        let status: CaseStatus = "available";
+        
+        if (userProgress) {
+          status = userProgress.status as CaseStatus;
+        } else {
+          // Check if case should be locked due to prerequisites
+          const prerequisites = caseItem.prerequisites || [];
+          const requiredXp = caseItem.required_xp || 0;
+          
+          const hasPrerequisites = prerequisites.length === 0 || 
+            prerequisites.every(prereqId => 
+              userProgressData.some(p => p.case_id === prereqId && p.status === "solved")
+            );
+          
+          const hasEnoughXp = userXp >= requiredXp;
+          
+          if (!hasPrerequisites || !hasEnoughXp) {
+            status = "locked";
+          }
+        }
+        
         return {
           id: caseItem.id,
           title: caseItem.title,
           description: caseItem.description,
           difficulty: caseItem.difficulty as Difficulty,
-          status: userProgress ? userProgress.status as CaseStatus : "available",
+          status,
           xpReward: caseItem.xp_reward,
           prerequisites: caseItem.prerequisites || [],
           mathConcepts: caseItem.math_concepts,
           locale: caseItem.locale || i18n.language,
           category,
           progress,
-          completed: userProgress?.status === "solved"
+          completed: userProgress?.status === "solved",
+          requiredXp: caseItem.required_xp
         } as Case;
       });
 
@@ -120,10 +151,45 @@ export const FirebaseCasesProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [user, i18n.language]);
 
+  // Check if a case is accessible to the user
+  const isCaseAccessible = (caseId: string): boolean => {
+    const caseItem = cases.find(c => c.id === caseId);
+    if (!caseItem) return false;
+    
+    return caseItem.status !== "locked";
+  };
+  
+  // Get XP required for a case
+  const getRequiredXp = (caseId: string): number => {
+    const caseItem = cases.find(c => c.id === caseId);
+    return caseItem?.requiredXp || 0;
+  };
+  
+  // Get missing prerequisites for a case
+  const getMissingPrerequisites = (caseId: string): string[] => {
+    const caseItem = cases.find(c => c.id === caseId);
+    if (!caseItem || !caseItem.prerequisites.length) return [];
+    
+    return caseItem.prerequisites.filter(prereqId => {
+      const prereqCase = cases.find(c => c.id === prereqId);
+      return prereqCase && !prereqCase.completed;
+    });
+  };
+
   const startCase = async (caseId: string) => {
     if (!user) return;
 
     try {
+      // Check if the case is accessible
+      if (!isCaseAccessible(caseId)) {
+        toast({
+          title: "Case Locked",
+          description: "You need to meet the prerequisites to start this case.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Check if user case already exists
       const userCasesRef = collection(db, "user_cases");
       const q = query(userCasesRef, 
@@ -258,6 +324,29 @@ export const FirebaseCasesProvider: React.FC<{ children: React.ReactNode }> = ({
             : c
         )
       );
+      
+      // Check for newly unlocked cases
+      const potentiallyUnlockedCases = cases.filter(c => 
+        c.status === "locked" && 
+        c.prerequisites.includes(caseId)
+      );
+      
+      if (potentiallyUnlockedCases.length > 0) {
+        // Refresh cases to update their lock status
+        await fetchCasesAndProgress();
+        
+        // Notify user of newly unlocked cases
+        const newlyUnlocked = potentiallyUnlockedCases.filter(c => 
+          cases.find(updatedCase => updatedCase.id === c.id && updatedCase.status === "available")
+        );
+        
+        if (newlyUnlocked.length > 0) {
+          toast({
+            title: "New Cases Unlocked!",
+            description: `You've unlocked ${newlyUnlocked.length} new case(s)!`,
+          });
+        }
+      }
 
       toast({
         title: "Case solved!",
@@ -296,7 +385,10 @@ export const FirebaseCasesProvider: React.FC<{ children: React.ReactNode }> = ({
         completeCase,
         refreshCases,
         currentCase,
-        loadCase
+        loadCase,
+        isCaseAccessible,
+        getRequiredXp,
+        getMissingPrerequisites
       }}
     >
       {children}

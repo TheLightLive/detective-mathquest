@@ -10,15 +10,17 @@ import {
   Award,
   Send
 } from "lucide-react";
-import { useCases } from "@/contexts/CasesContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useFirebaseCases } from "@/contexts/FirebaseCasesContext";
+import { useFirebaseAuth } from "@/contexts/FirebaseAuthContext";
 import NavBar from "@/components/NavBar";
+import CaseAccessDenied from "@/components/CaseAccessDenied";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 
 // Simplified case story structure
 interface StorySegment {
@@ -34,7 +36,7 @@ interface StorySegment {
   };
 }
 
-// Sample story for the first case
+// Sample story for the first case - Algebra
 const CASE_1_STORY: Record<string, StorySegment> = {
   "intro": {
     id: "intro",
@@ -131,7 +133,7 @@ const CASE_1_STORY: Record<string, StorySegment> = {
   }
 };
 
-// Sample story for the second case (just the structure for now)
+// Sample story for the second case - Geometry
 const CASE_2_STORY: Record<string, StorySegment> = {
   "intro": {
     id: "intro",
@@ -146,7 +148,33 @@ const CASE_2_STORY: Record<string, StorySegment> = {
     text: "You arrive at the museum during closed hours. The curator meets you by the altered triangle exhibit.",
     type: "narrative",
     options: [
-      { text: "Talk to the curator", next: "puzzle" }
+      { text: "Talk to the curator", next: "curator" }
+    ]
+  },
+  "curator": {
+    id: "curator",
+    text: "Detective, thank you for coming so quickly. Our prized triangle exhibit has been altered. Two of the angles are now 65° and 75°, but the third angle has been completely erased. We need to restore it before the museum opens tomorrow.",
+    type: "dialogue",
+    character: "Curator Williams",
+    options: [
+      { text: "Examine security footage", next: "security" },
+      { text: "Analyze the triangle", next: "analyze" }
+    ]
+  },
+  "security": {
+    id: "security",
+    text: "The security footage shows a young student lingering at the exhibit after hours, making calculations and then altering the display. The curator identifies him as a mathematics prodigy who frequently visits.",
+    type: "clue",
+    options: [
+      { text: "Analyze the triangle", next: "analyze" }
+    ]
+  },
+  "analyze": {
+    id: "analyze",
+    text: "You examine the triangle closely. Two angles are marked: 65° and 75°. The third angle has been erased completely. You'll need to calculate what it should be.",
+    type: "clue",
+    options: [
+      { text: "Calculate the missing angle", next: "puzzle" }
     ]
   },
   "puzzle": {
@@ -160,15 +188,40 @@ const CASE_2_STORY: Record<string, StorySegment> = {
     },
     options: []
   },
+  "solution": {
+    id: "solution",
+    text: "You calculate that the third angle should be 40°. You make a note of this and prepare to track down the student who altered the exhibit.",
+    type: "narrative",
+    options: [
+      { text: "Find the student", next: "student" }
+    ]
+  },
+  "student": {
+    id: "student",
+    text: "You locate the student at a nearby coffee shop, surrounded by math textbooks. When you approach, he appears nervous but not surprised.",
+    type: "narrative",
+    options: [
+      { text: "Question the student", next: "confrontation" }
+    ]
+  },
+  "confrontation": {
+    id: "confrontation",
+    text: "I was testing a theory about perception of angles! I calculated that most people wouldn't notice if I altered the angles slightly, as long as they still summed to 180 degrees. It was just a psychological experiment, I swear!",
+    type: "dialogue",
+    character: "Student",
+    options: [
+      { text: "Complete the investigation", next: "conclusion" }
+    ]
+  },
   "conclusion": {
     id: "conclusion",
-    text: "Case solved! You've determined that the third angle should be 40°. The security footage reveals that it was an overzealous student trying to test a theory who altered the display.",
+    text: "Case solved! You've determined that the third angle should be 40° and identified the culprit. The museum agrees not to press charges if the student helps create a new interactive exhibit about geometric principles.",
     type: "conclusion",
     options: []
   }
 };
 
-// Sample story for the third case (just the structure for now)
+// Sample story for the third case - Probability
 const CASE_3_STORY: Record<string, StorySegment> = {
   "intro": {
     id: "intro",
@@ -183,7 +236,33 @@ const CASE_3_STORY: Record<string, StorySegment> = {
     text: "You arrive at the glitzy Casino Mathematica. The manager shows you to the probability table, where players must predict certain outcomes based on probability problems.",
     type: "narrative",
     options: [
-      { text: "Observe the games", next: "puzzle" }
+      { text: "Talk to the manager", next: "manager" }
+    ]
+  },
+  "manager": {
+    id: "manager",
+    text: "Detective, one of our patrons has won 15 times in a row at our probability challenge table. The odds of that happening by chance are astronomically low. We suspect they're using some mathematical trick to predict outcomes.",
+    type: "dialogue",
+    character: "Casino Manager",
+    options: [
+      { text: "Observe the games", next: "observe" },
+      { text: "Review the player's pattern", next: "pattern" }
+    ]
+  },
+  "observe": {
+    id: "observe",
+    text: "You watch the probability tables for a while. A well-dressed professor-type consistently wins at a game involving colored marbles. He seems to be performing quick calculations before each round.",
+    type: "clue",
+    options: [
+      { text: "Review the player's pattern", next: "pattern" }
+    ]
+  },
+  "pattern": {
+    id: "pattern",
+    text: "The game involves drawing marbles from a bag and predicting specific outcomes. The professor seems to excel particularly at problems involving combinations and conditional probability.",
+    type: "clue",
+    options: [
+      { text: "Try to solve a probability problem yourself", next: "puzzle" }
     ]
   },
   "puzzle": {
@@ -197,9 +276,26 @@ const CASE_3_STORY: Record<string, StorySegment> = {
     },
     options: []
   },
+  "solution": {
+    id: "solution",
+    text: "You calculate the probability as 0.36 or about 36%. With this knowledge, you observe the professor more carefully and notice he's using a hidden calculator in his watch.",
+    type: "narrative",
+    options: [
+      { text: "Confront the professor", next: "confrontation" }
+    ]
+  },
+  "confrontation": {
+    id: "confrontation",
+    text: "When confronted, the professor admits, 'I'm just using mathematics, which isn't against the rules! I've developed a system for quickly calculating exact probabilities that most people can only estimate.'",
+    type: "dialogue",
+    character: "Professor",
+    options: [
+      { text: "Complete the investigation", next: "conclusion" }
+    ]
+  },
   "conclusion": {
     id: "conclusion",
-    text: "Case cracked! You determined the exact probability of 0.36 and identified the mathematics professor who was using a hidden calculator to compute complex probabilities on the fly.",
+    text: "Case cracked! While the professor wasn't technically cheating, the casino updates their rules to prohibit calculation devices. They also offer the professor a job designing new probability games for them, turning a potential problem into an asset.",
     type: "conclusion",
     options: []
   }
@@ -207,16 +303,16 @@ const CASE_3_STORY: Record<string, StorySegment> = {
 
 // Map case IDs to their story structures
 const CASE_STORIES: Record<string, Record<string, StorySegment>> = {
-  "case1": CASE_1_STORY,
-  "case2": CASE_2_STORY,
-  "case3": CASE_3_STORY
+  "algebra1": CASE_1_STORY,
+  "geometry1": CASE_2_STORY,
+  "probability1": CASE_3_STORY
 };
 
 const Investigation = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { cases, loadCase, currentCase, updateCaseProgress, completeCase } = useCases();
-  const { user } = useAuth();
+  const { cases, loadCase, currentCase, updateCaseProgress, completeCase, isCaseAccessible } = useFirebaseCases();
+  const { user } = useFirebaseAuth();
   const { toast } = useToast();
   
   const [currentSegment, setCurrentSegment] = useState<StorySegment | null>(null);
@@ -225,28 +321,36 @@ const Investigation = () => {
   const [showHint, setShowHint] = useState(false);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
   const [segmentTransition, setSegmentTransition] = useState(false);
+  const [isAccessible, setIsAccessible] = useState<boolean | null>(null);
   
   // Load the case and initialize the story
   useEffect(() => {
     if (id) {
       loadCase(id);
       
-      // Get the story for this case
-      const caseStory = CASE_STORIES[id];
-      if (caseStory) {
-        // Start from intro
-        const introSegment = caseStory["intro"];
-        setCurrentSegment(introSegment);
-        setStoryHistory([introSegment]);
-        
-        // Update progress
-        const thisCase = cases.find(c => c.id === id);
-        if (thisCase && thisCase.progress === 0) {
-          updateCaseProgress(id, 10); // Started the case
+      // Check if case is accessible
+      const accessible = isCaseAccessible(id);
+      setIsAccessible(accessible);
+      
+      // If accessible, load the story
+      if (accessible) {
+        // Get the story for this case
+        const caseStory = CASE_STORIES[id];
+        if (caseStory) {
+          // Start from intro
+          const introSegment = caseStory["intro"];
+          setCurrentSegment(introSegment);
+          setStoryHistory([introSegment]);
+          
+          // Update progress
+          const thisCase = cases.find(c => c.id === id);
+          if (thisCase && thisCase.progress === 0) {
+            updateCaseProgress(id, 10); // Started the case
+          }
         }
       }
     }
-  }, [id, loadCase, cases, updateCaseProgress]);
+  }, [id, loadCase, cases, updateCaseProgress, isCaseAccessible]);
   
   // Function to navigate to the next story segment
   const goToNextSegment = (nextId: string) => {
@@ -306,7 +410,7 @@ const Investigation = () => {
   };
   
   // Show a loading state while we wait for the case to load
-  if (!currentCase || !currentSegment) {
+  if (isAccessible === null || (isAccessible && !currentCase)) {
     return (
       <div className="min-h-screen bg-noir flex flex-col">
         <NavBar />
@@ -320,6 +424,16 @@ const Investigation = () => {
             <p className="text-gray-400">Loading investigation...</p>
           </div>
         </div>
+      </div>
+    );
+  }
+  
+  // Show access denied component if case is locked
+  if (isAccessible === false) {
+    return (
+      <div className="min-h-screen bg-noir flex flex-col">
+        <NavBar />
+        <CaseAccessDenied caseId={id || ""} />
       </div>
     );
   }
@@ -451,11 +565,13 @@ const Investigation = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => navigate("/calculator")}
+                          asChild
                           className="text-neon-cyan border-neon-cyan/30 hover:bg-neon-cyan/10"
                         >
-                          <Calculator className="h-4 w-4 mr-1" />
-                          Open Math Tools
+                          <Link to="/math-tools">
+                            <Calculator className="h-4 w-4 mr-1" />
+                            Open Math Tools
+                          </Link>
                         </Button>
                       </div>
                     </div>

@@ -14,10 +14,11 @@ export interface Case {
   mathConcepts: string[];
   locale: string;
   
-  // Add missing properties
-  category?: string; // e.g., 'algebra', 'geometry', 'probability', 'advanced'
-  progress?: number; // Progress percentage (0-100)
-  completed?: boolean; // Whether the case is completed
+  // Added properties for access system
+  category: string; // e.g., 'algebra', 'geometry', 'probability', 'advanced'
+  progress: number; // Progress percentage (0-100)
+  completed: boolean; // Whether the case is completed
+  requiredXp?: number; // Minimum XP required to unlock
 }
 
 export interface UserProgress {

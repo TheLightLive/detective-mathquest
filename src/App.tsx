@@ -16,6 +16,7 @@ import Showcase from "./pages/Showcase";
 import NotFound from "./pages/NotFound";
 import DetectiveCases from "./pages/DetectiveCases";
 import Profile from "./pages/Profile";
+import MathTools from "./pages/MathTools";
 import { useFirebaseAuth } from "./contexts/FirebaseAuthContext";
 import { useEffect } from "react";
 import { useIsMobile } from "./hooks/use-mobile";
@@ -104,6 +105,11 @@ const AppRoutes = () => {
       <Route path="/profile" element={
         <ProtectedRoute>
           <Profile />
+        </ProtectedRoute>
+      } />
+      <Route path="/math-tools" element={
+        <ProtectedRoute>
+          <MathTools />
         </ProtectedRoute>
       } />
       
