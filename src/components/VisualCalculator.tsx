@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,6 +89,9 @@ const VisualCalculator: React.FC = () => {
           '-': '-',
           '=': '='
         };
+        if (element.id === selectedElement) {
+          return `\\textcolor{cyan}{|}${opMap[element.value] || element.value}`;
+        }
         return addCursor(opMap[element.value] || element.value);
         
       case 'function':
@@ -105,14 +107,12 @@ const VisualCalculator: React.FC = () => {
         if (element.children && element.children.length > 0) {
           const args = element.children.map(elementToLatex).join(',');
           const result = `${funcName}\\left(${args}\\right)`;
-          // For function, add cursor inside by default
           if (element.id === selectedElement && element.cursorPosition === undefined) {
             return result.replace(args, `${args}\\textcolor{cyan}{|}`);
           }
           return result;
         }
         
-        // Empty function with cursor inside parentheses
         if (element.id === selectedElement) {
           return `${funcName}\\left(\\textcolor{cyan}{|}\\right)`;
         }
@@ -123,7 +123,6 @@ const VisualCalculator: React.FC = () => {
           const numerator = elementToLatex(element.children[0]);
           const denominator = elementToLatex(element.children[1]);
           
-          // If selected but cursor position not specified, show cursor in numerator
           if (element.id === selectedElement && element.cursorPosition === undefined) {
             return `\\frac{${numerator}\\textcolor{cyan}{|}}{${denominator}}`;
           }
@@ -131,7 +130,6 @@ const VisualCalculator: React.FC = () => {
           return addCursor(`\\frac{${numerator}}{${denominator}}`);
         }
         
-        // Empty fraction with cursor in numerator
         if (element.id === selectedElement) {
           return `\\frac{\\textcolor{cyan}{|}}{}`; 
         }
@@ -141,7 +139,6 @@ const VisualCalculator: React.FC = () => {
         if (element.children && element.children.length === 1) {
           const content = elementToLatex(element.children[0]);
           
-          // If selected but cursor position not specified, show cursor inside
           if (element.id === selectedElement && element.cursorPosition === undefined) {
             return `\\sqrt{${content}\\textcolor{cyan}{|}}`;
           }
@@ -149,7 +146,6 @@ const VisualCalculator: React.FC = () => {
           return addCursor(`\\sqrt{${content}}`);
         }
         
-        // Empty sqrt with cursor inside
         if (element.id === selectedElement) {
           return `\\sqrt{\\textcolor{cyan}{|}}`; 
         }
@@ -160,7 +156,6 @@ const VisualCalculator: React.FC = () => {
           const base = elementToLatex(element.children[0]);
           const exponent = elementToLatex(element.children[1]);
           
-          // If selected but cursor position not specified, show cursor in base
           if (element.id === selectedElement && element.cursorPosition === undefined) {
             return `{${base}\\textcolor{cyan}{|}}^{${exponent}}`;
           }
@@ -168,7 +163,6 @@ const VisualCalculator: React.FC = () => {
           return addCursor(`{${base}}^{${exponent}}`);
         }
         
-        // Empty power with cursor in base
         if (element.id === selectedElement) {
           return `{\\textcolor{cyan}{|}}^{}`; 
         }
@@ -179,14 +173,9 @@ const VisualCalculator: React.FC = () => {
           const content = element.children.map(elementToLatex).join('');
           
           if (element.id === 'root') {
-            // For root element, add cursor at end if selected
-            if (element.id === selectedElement) {
-              return `${content}\\textcolor{cyan}{|}`;
-            }
             return content;
           }
           
-          // If selected but cursor position not specified, show cursor inside
           if (element.id === selectedElement && element.cursorPosition === undefined) {
             return `\\left(${content}\\textcolor{cyan}{|}\\right)`;
           }
@@ -194,7 +183,6 @@ const VisualCalculator: React.FC = () => {
           return addCursor(`\\left(${content}\\right)`);
         }
         
-        // Empty parentheses with cursor inside
         if (element.id === selectedElement && element.id !== 'root') {
           return `\\left(\\textcolor{cyan}{|}\\right)`;
         } else if (element.id === 'root' && element.id === selectedElement) {
@@ -209,7 +197,6 @@ const VisualCalculator: React.FC = () => {
         if (element.children && element.children.length === 1) {
           const content = elementToLatex(element.children[0]);
           
-          // If selected but cursor position not specified, show cursor inside
           if (element.id === selectedElement && element.cursorPosition === undefined) {
             return `^{${content}\\textcolor{cyan}{|}}`;
           }
@@ -217,7 +204,6 @@ const VisualCalculator: React.FC = () => {
           return addCursor(`^{${content}}`);
         }
         
-        // Empty superscript with cursor inside
         if (element.id === selectedElement) {
           return `^{\\textcolor{cyan}{|}}`; 
         }
@@ -227,7 +213,6 @@ const VisualCalculator: React.FC = () => {
         if (element.children && element.children.length === 1) {
           const content = elementToLatex(element.children[0]);
           
-          // If selected but cursor position not specified, show cursor inside
           if (element.id === selectedElement && element.cursorPosition === undefined) {
             return `_{${content}\\textcolor{cyan}{|}}`;
           }
@@ -235,7 +220,6 @@ const VisualCalculator: React.FC = () => {
           return addCursor(`_{${content}}`);
         }
         
-        // Empty subscript with cursor inside
         if (element.id === selectedElement) {
           return `_{\\textcolor{cyan}{|}}`; 
         }
@@ -289,6 +273,9 @@ const VisualCalculator: React.FC = () => {
         newElements[newId] = newElement;
         delete newElements[activeElementId];
       }
+    } else if (active.type === 'sqrt' && active.children.length === 0) {
+      active.children.push(newId);
+      newElements[newId] = newElement;
     } else if (active.type === 'function' && active.children.length === 0) {
       active.children.push(newId);
       newElements[newId] = newElement;
@@ -702,13 +689,13 @@ const VisualCalculator: React.FC = () => {
   };
 
   const renderTabContent = () => {
-    const buttonClass = "font-serif text-[11px] leading-none h-7 w-full";
+    const buttonClass = "font-serif text-xl leading-none h-10 w-10 p-0 flex items-center justify-center";
     
     switch (currentTab) {
       case 'main':
         return (
           <>
-            <div className="grid grid-cols-5 gap-1">
+            <div className="grid grid-cols-5 gap-1.5">
               <Button variant="outline" onClick={() => addElement('number', '7')} className={buttonClass} size="sm">
                 <span className="katex-font">7</span>
               </Button>
@@ -722,7 +709,7 @@ const VisualCalculator: React.FC = () => {
                 <span className="katex-font">÷</span>
               </Button>
               <Button variant="outline" onClick={deleteActiveElement} className={buttonClass} size="sm">
-                <Delete className="h-3 w-3" />
+                <Delete className="h-5 w-5" />
               </Button>
               
               <Button variant="outline" onClick={() => addElement('number', '4')} className={buttonClass} size="sm">
@@ -786,14 +773,14 @@ const VisualCalculator: React.FC = () => {
                 <span dangerouslySetInnerHTML={{ __html: renderLatex("\\frac{a}{b}") }} />
               </Button>
               <Button variant="outline" onClick={calculateResult} className={buttonClass} size="sm">
-                <Equal className="h-3 w-3" />
+                <Equal className="h-5 w-5" />
               </Button>
             </div>
           </>
         );
       case 'functions':
         return (
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-4 gap-1.5">
             <Button variant="outline" onClick={() => addStructure('function', 'sin')} className={buttonClass} size="sm">
               <span className="katex-font">sin</span>
             </Button>
@@ -836,7 +823,7 @@ const VisualCalculator: React.FC = () => {
         );
       case 'calculus':
         return (
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-4 gap-1.5">
             <Button variant="outline" onClick={() => addStructure('function', 'diff')} className={buttonClass} size="sm">
               <span dangerouslySetInnerHTML={{ __html: renderLatex("\\frac{d}{dx}") }} />
             </Button>
@@ -993,7 +980,7 @@ const VisualCalculator: React.FC = () => {
       }
       
       button .katex {
-        font-size: 0.9em;
+        font-size: 1.1em;
       }
       
       /* Better cursor visibility */
