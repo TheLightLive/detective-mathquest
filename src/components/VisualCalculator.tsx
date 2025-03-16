@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { evaluate } from 'mathjs';
 import { 
   Calculator, Plus, Minus, X, Divide, PiSquare, 
-  BarChart, Brackets, Equal, Sigma, Delete, AlphabetLatin
+  BarChart, Brackets, Equal, Sigma, Delete, case-lower
 } from "lucide-react";
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -767,7 +767,7 @@ const VisualCalculator: React.FC = () => {
               <Button variant="outline" onClick={() => addStructure('fraction')} className={buttonClass} size="sm">
                 a/b
               </Button>
-              <Button variant="primary" onClick={calculateResult} className={`${buttonClass} bg-neon-cyan text-noir`} size="sm">
+              <Button variant="outline" onClick={calculateResult} className={`${buttonClass} bg-neon-cyan text-noir`} size="sm">
                 =
               </Button>
             </div>
@@ -1074,7 +1074,7 @@ const VisualCalculator: React.FC = () => {
             className="flex-shrink-0 font-serif katex-font text-xs"
             size="sm"
           >
-            <AlphabetLatin className="h-3 w-3 mr-1" />
+            <case-lower className="h-3 w-3 mr-1" />
             Algebra
           </Button>
         </div>
