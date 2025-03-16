@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { evaluate } from 'mathjs';
 import { 
   Calculator, Plus, Minus, X, Divide, PiSquare, 
-  BarChart, Brackets, Equal, Sigma, Delete, case-lower
+  BarChart, Brackets, Equal, Sigma, Delete, keyboard
 } from "lucide-react";
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -1074,7 +1074,7 @@ const VisualCalculator: React.FC = () => {
             className="flex-shrink-0 font-serif katex-font text-xs"
             size="sm"
           >
-            <case-lower className="h-3 w-3 mr-1" />
+            <keyboard className="h-3 w-3 mr-1" />
             Algebra
           </Button>
         </div>
