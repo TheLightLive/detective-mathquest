@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,7 +46,6 @@ const VisualCalculator: React.FC = () => {
 
   const generateId = () => `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  // Enhanced LaTeX rendering with cursor support
   const renderLatex = (latex: string) => {
     try {
       return katex.renderToString(latex, {
@@ -61,12 +59,10 @@ const VisualCalculator: React.FC = () => {
     }
   };
 
-  // Improved LaTeX conversion for each element type
   const elementToLatex = (elementId: string): string => {
     const element = elements[elementId];
     if (!element) return '';
 
-    // Add visual cursor for selected elements
     const addCursor = (latex: string): string => {
       if (element.id === selectedElement && element.cursorPosition !== undefined) {
         const pos = Math.min(element.cursorPosition, latex.length);
@@ -102,7 +98,6 @@ const VisualCalculator: React.FC = () => {
           args = element.children.map(elementToLatex).join(',');
           return `${funcName}\\left(${args}\\right)`;
         }
-        // If it's selected, show cursor inside the empty parentheses
         if (element.id === selectedElement) {
           return `${funcName}\\left(\\textcolor{cyan}{|}\\right)`;
         }
@@ -121,7 +116,6 @@ const VisualCalculator: React.FC = () => {
           const content = elementToLatex(element.children[0]);
           return addCursor(`\\sqrt{${content}}`);
         }
-        // If selected, show cursor inside
         if (element.id === selectedElement) {
           return addCursor('\\sqrt{\\textcolor{cyan}{|}}');
         }
@@ -133,7 +127,6 @@ const VisualCalculator: React.FC = () => {
           const exponent = elementToLatex(element.children[1]);
           return addCursor(`{${base}}^{${exponent}}`);
         }
-        // If selected, show cursor in base or exponent
         if (element.id === selectedElement) {
           return addCursor('{\\textcolor{cyan}{|}}^{}');
         }
@@ -147,11 +140,10 @@ const VisualCalculator: React.FC = () => {
           }
           return addCursor(`\\left(${content}\\right)`);
         }
-        // If selected and empty, show cursor inside
         if (element.id === selectedElement) {
           return addCursor('\\left(\\textcolor{cyan}{|}\\right)');
         } else if (element.id === 'root') {
-          return ''; // Empty root doesn't show anything
+          return '';
         }
         return addCursor('\\left(\\right)');
         
@@ -180,7 +172,6 @@ const VisualCalculator: React.FC = () => {
     }
   };
 
-  // Get the parent element and position for a given element
   const getParentInfo = (elementId: string): {parentId: string, index: number} => {
     const parent = Object.values(elements).find(el => 
       el.children && el.children.includes(elementId)
@@ -194,7 +185,6 @@ const VisualCalculator: React.FC = () => {
     return { parentId: 'root', index: -1 };
   };
 
-  // Add new element to the active position
   const addElement = (type: MathElement['type'], value: string) => {
     const newId = generateId();
     const newElement: MathElement = { 
@@ -209,11 +199,9 @@ const VisualCalculator: React.FC = () => {
     const active = activeElementId ? newElements[activeElementId] : null;
     
     if (!active) {
-      // If no active element, add to root
       newElements.root.children.push(newId);
       newElements[newId] = newElement;
     } else if (active.type === 'placeholder') {
-      // Replace placeholder with new element
       const { parentId, index } = getParentInfo(activeElementId);
       if (parentId && index !== -1) {
         const parent = newElements[parentId];
@@ -222,20 +210,16 @@ const VisualCalculator: React.FC = () => {
         delete newElements[activeElementId];
       }
     } else if (active.type === 'function' && active.children.length === 0) {
-      // Add as first child to empty function
       active.children.push(newId);
       newElements[newId] = newElement;
     } else if (active.type === 'parentheses' || active.type === 'sqrt' || 
                active.type === 'fraction' || active.type === 'power') {
-      // Add to the active structure element if it has space
       if (active.children.length === 0 || 
           (active.type === 'fraction' && active.children.length < 2) ||
           (active.type === 'power' && active.children.length < 2)) {
         active.children.push(newId);
         newElements[newId] = newElement;
       } else {
-        // For structures that already have their required children,
-        // add to the parent at the next position
         const { parentId, index } = getParentInfo(activeElementId);
         if (parentId && index !== -1) {
           const parent = newElements[parentId];
@@ -244,14 +228,12 @@ const VisualCalculator: React.FC = () => {
         }
       }
     } else {
-      // For other element types, add to the parent at the next position
       const { parentId, index } = getParentInfo(activeElementId);
       if (parentId && index !== -1) {
         const parent = newElements[parentId];
         parent.children.splice(index + 1, 0, newId);
         newElements[newId] = newElement;
       } else {
-        // Fallback to root if we couldn't find the parent
         newElements.root.children.push(newId);
         newElements[newId] = newElement;
       }
@@ -262,7 +244,6 @@ const VisualCalculator: React.FC = () => {
     setSelectedElement(newId);
   };
 
-  // Add a structure (fraction, sqrt, etc.) at the active position
   const addStructure = (type: 'fraction' | 'sqrt' | 'power' | 'parentheses' | 'function', funcName?: string) => {
     const newId = generateId();
     const placeholderId1 = generateId();
@@ -311,10 +292,8 @@ const VisualCalculator: React.FC = () => {
     const active = activeElementId ? newElements[activeElementId] : null;
     
     if (!active) {
-      // If no active element, add to root
       newElements.root.children.push(newId);
     } else if (active.type === 'placeholder') {
-      // Replace placeholder with new structure
       const { parentId, index } = getParentInfo(activeElementId);
       if (parentId && index !== -1) {
         const parent = newElements[parentId];
@@ -322,20 +301,17 @@ const VisualCalculator: React.FC = () => {
         delete newElements[activeElementId];
       }
     } else {
-      // Insert at the active element's parent
       const { parentId, index } = getParentInfo(activeElementId);
       if (parentId && index !== -1) {
         const parent = newElements[parentId];
         parent.children.splice(index + 1, 0, newId);
       } else {
-        // Fallback to root
         newElements.root.children.push(newId);
       }
     }
     
     setElements(newElements);
     
-    // Set active element to the structure or first placeholder
     if (type === 'function') {
       setActiveElementId(newId);
       setSelectedElement(newId);
@@ -345,7 +321,6 @@ const VisualCalculator: React.FC = () => {
     }
   };
 
-  // Convert elements to evaluable expression
   const elementToEvaluable = (elementId: string): string => {
     const element = elements[elementId];
     if (!element) return '';
@@ -389,7 +364,6 @@ const VisualCalculator: React.FC = () => {
       case 'parentheses':
         if (element.children && element.children.length > 0) {
           if (element.id === 'root') {
-            // Don't add extra parentheses for the root element
             return element.children.map(elementToEvaluable).join('');
           }
           return `(${element.children.map(elementToEvaluable).join('')})`;
@@ -416,9 +390,7 @@ const VisualCalculator: React.FC = () => {
     }
   };
 
-  // Find next element by direction
   const findNextElement = (direction: 'prev' | 'next'): string | null => {
-    // Flatten the element tree for navigation
     const flattenElements = (root: string = 'root'): string[] => {
       const result: string[] = [root];
       const element = elements[root];
@@ -444,7 +416,6 @@ const VisualCalculator: React.FC = () => {
     }
   };
 
-  // Navigate through the equation structure
   const navigateStructure = (direction: 'up' | 'down' | 'left' | 'right') => {
     if (!activeElementId) {
       setActiveElementId('root');
@@ -456,7 +427,6 @@ const VisualCalculator: React.FC = () => {
     if (!activeElement) return;
     
     if (direction === 'left' || direction === 'right') {
-      // For left/right, move within the parent's children
       const { parentId, index } = getParentInfo(activeElementId);
       if (!parentId) return;
       
@@ -473,14 +443,12 @@ const VisualCalculator: React.FC = () => {
         setSelectedElement(newActiveId);
       }
     } else if (direction === 'up') {
-      // For up, move to the parent
       const { parentId } = getParentInfo(activeElementId);
       if (parentId && elements[parentId]) {
         setActiveElementId(parentId);
         setSelectedElement(parentId);
       }
     } else if (direction === 'down') {
-      // For down, move to the first child
       if (activeElement.children && activeElement.children.length > 0) {
         const firstChildId = activeElement.children[0];
         setActiveElementId(firstChildId);
@@ -489,33 +457,26 @@ const VisualCalculator: React.FC = () => {
     }
   };
 
-  // Calculate the result of the expression
   const calculateResult = () => {
     try {
-      // Convert to LaTeX for display
       const inputLatex = elementToLatex('root');
       
-      // Check if it's an equation
       const mathJsExpression = elementToEvaluable('root');
       const isEquation = mathJsExpression.includes('=');
       
       let resultStr;
       
       if (isEquation) {
-        // Try to solve the equation
         resultStr = solveEquation(mathJsExpression);
       } else {
-        // Evaluate the expression
         const hasVariables = mathJsExpression.includes('x') || 
                             mathJsExpression.includes('y') ||
                             mathJsExpression.includes('z');
         
         if (hasVariables) {
-          // For expressions with variables, just simplify
           resultStr = mathJsExpression;
         } else {
           try {
-            // For pure numeric expressions, evaluate
             const calculatedResult = evaluate(mathJsExpression);
             resultStr = typeof calculatedResult === 'number' 
               ? Number.isInteger(calculatedResult) 
@@ -529,7 +490,6 @@ const VisualCalculator: React.FC = () => {
         }
       }
       
-      // Set the result and update history
       setResult(`${inputLatex} = ${resultStr}`);
       setHistory(prev => [...prev, { input: inputLatex, output: resultStr }]);
       
@@ -547,7 +507,6 @@ const VisualCalculator: React.FC = () => {
     }
   };
 
-  // Clear the calculator
   const clearCalculator = () => {
     setElements({
       'root': {
@@ -564,7 +523,6 @@ const VisualCalculator: React.FC = () => {
     setResult('');
   };
 
-  // Delete the active element
   const deleteActiveElement = () => {
     if (activeElementId === 'root') return;
     
@@ -574,10 +532,8 @@ const VisualCalculator: React.FC = () => {
     const newElements = {...elements};
     const parent = newElements[parentId];
     
-    // Remove the element from its parent
     parent.children.splice(index, 1);
     
-    // Recursively delete element and its children
     const deleteRecursive = (elementId: string) => {
       const element = newElements[elementId];
       if (!element) return;
@@ -589,9 +545,8 @@ const VisualCalculator: React.FC = () => {
       delete newElements[elementId];
     };
     
-    deleteActiveElement(activeElementId);
+    deleteRecursive(activeElementId);
     
-    // Set active element to parent or previous sibling
     const newActiveId = index > 0 
       ? parent.children[index - 1] 
       : parent.children[0] || parentId;
@@ -601,9 +556,7 @@ const VisualCalculator: React.FC = () => {
     setSelectedElement(newActiveId || 'root');
   };
 
-  // Handle direct keyboard input
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Navigation keys
     if (e.key === 'Tab') {
       e.preventDefault();
       const nextElement = findNextElement(e.shiftKey ? 'prev' : 'next');
@@ -629,9 +582,7 @@ const VisualCalculator: React.FC = () => {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       calculateResult();
-    }
-    // Direct input for numbers, operators, and variables
-    else if (/^[0-9.]$/.test(e.key)) {
+    } else if (/^[0-9.]$/.test(e.key)) {
       e.preventDefault();
       addElement('number', e.key);
     } else if (/^[+\-*/=]$/.test(e.key)) {
@@ -645,7 +596,6 @@ const VisualCalculator: React.FC = () => {
       addStructure('parentheses');
     } else if (e.key === ')') {
       e.preventDefault();
-      // Find parent parenthesis and move cursor after it
       navigateStructure('up');
       navigateStructure('right');
     } else if (e.key === '^') {
@@ -657,17 +607,14 @@ const VisualCalculator: React.FC = () => {
     }
   };
 
-  // Handle mouse click on an element
   const handleElementClick = (elementId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setActiveElementId(elementId);
     setSelectedElement(elementId);
     
-    // Focus the editor to enable keyboard input
     editorRef.current?.focus();
   };
 
-  // Render tabbed button panels
   const renderTabContent = () => {
     const buttonClass = "font-serif text-[11px] leading-none h-7 w-full";
     
@@ -836,38 +783,28 @@ const VisualCalculator: React.FC = () => {
     }
   };
 
-  // Render the math editor
   const renderEditor = () => {
-    // Map element IDs to their rendered elements for click handling
     useEffect(() => {
       const addClickHandlers = () => {
-        // For each element, find corresponding DOM element and add click handler
         Object.keys(elements).forEach(id => {
           const elem = document.getElementById(`math-elem-${id}`);
           if (elem) {
             elem.onclick = (e: any) => handleElementClick(id, e);
             
-            // Add hover handler
             elem.onmouseenter = () => setHoveredElementId(id);
             elem.onmouseleave = () => setHoveredElementId(null);
           }
         });
       };
       
-      // Add handlers after a short delay to ensure DOM is updated
       setTimeout(addClickHandlers, 50);
     }, [elements, activeElementId]);
     
-    // Generate HTML with click attributes for each element
     const generateHtmlWithIds = () => {
-      // Get the LaTeX representation
       const latex = elementToLatex('root');
       
-      // Render it through KaTeX
       const html = renderLatex(latex);
       
-      // Add IDs to each element for click handling
-      // We'll use a data attribute to identify elements
       let enhancedHtml = html;
       Object.keys(elements).forEach(id => {
         enhancedHtml = enhancedHtml.replace(
@@ -901,7 +838,6 @@ const VisualCalculator: React.FC = () => {
     );
   };
 
-  // Add KaTeX font styles
   useEffect(() => {
     document.body.classList.add('katex-fonts-enabled');
     
@@ -920,12 +856,10 @@ const VisualCalculator: React.FC = () => {
         background-color: rgba(32, 226, 215, 0.1);
       }
       
-      /* Improve visual feedback for selected elements */
       .math-editor [data-element-id]:hover {
         background-color: rgba(32, 226, 215, 0.2);
       }
       
-      /* Style for LaTeX buttons */
       button .katex {
         font-size: 0.9em;
       }
