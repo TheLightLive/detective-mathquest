@@ -18,7 +18,7 @@ export const formatExpression = (expr: MathExpression): string => {
     case 'function':
       return `${expr.value}(${expr.children?.map(formatExpression).join('') || ''})`;
     case 'group':
-      return `(${expr.children?.map(formatExpression).join('') || ''})`;
+      return `${expr.children?.map(formatExpression).join('') || ''}`;
     case 'fraction':
       if (expr.children && expr.children.length === 2) {
         return `(${formatExpression(expr.children[0])})/(${formatExpression(expr.children[1])})`;
@@ -76,12 +76,49 @@ export const latexToMathJs = (latex: string): string => {
     .replace(/\\div/g, "/");
 };
 
-export const evaluateLatex = (latex: string): number => {
+export const evaluateLatex = (latex: string): number | string => {
   try {
     const mathJsExpr = latexToMathJs(latex);
+    // Handle equations with variables
+    if (mathJsExpr.includes('x') || mathJsExpr.includes('y')) {
+      return mathJsExpr; // Return the expression as is
+    }
     return evaluate(mathJsExpr);
   } catch (error) {
     console.error('Error evaluating LaTeX:', error);
-    return NaN;
+    return "Error";
+  }
+};
+
+// Solve equations with one variable
+export const solveEquation = (latex: string): string => {
+  try {
+    // Check if it's an equation (contains =)
+    if (!latex.includes('=')) {
+      return "Not an equation";
+    }
+    
+    const mathJsExpr = latexToMathJs(latex);
+    const [leftSide, rightSide] = mathJsExpr.split('=').map(s => s.trim());
+    
+    // Only support simple equations for now
+    if (leftSide.includes('x')) {
+      const result = evaluate(`solve(${leftSide} = ${rightSide}, x)`);
+      if (Array.isArray(result)) {
+        return result.map(r => `x = ${r}`).join(', ');
+      }
+      return `x = ${result}`;
+    } else if (rightSide.includes('x')) {
+      const result = evaluate(`solve(${rightSide} = ${leftSide}, x)`);
+      if (Array.isArray(result)) {
+        return result.map(r => `x = ${r}`).join(', ');
+      }
+      return `x = ${result}`;
+    }
+    
+    return "Cannot solve equation";
+  } catch (error) {
+    console.error('Error solving equation:', error);
+    return "Error solving equation";
   }
 };

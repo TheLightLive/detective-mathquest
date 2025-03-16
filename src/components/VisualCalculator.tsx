@@ -1,16 +1,17 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { evaluate } from 'mathjs';
 import { 
-  Calculator, Square, Plus, Minus, X, Divide, PiSquare, 
-  BarChart, ChevronRight, ChevronLeft, Brackets, Equal, Sigma, Braces
+  Calculator, Plus, Minus, X, Divide, PiSquare, 
+  BarChart, Brackets, Equal, Sigma, Delete
 } from "lucide-react";
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { evaluateLatex, solveEquation } from '@/utils/mathOperations';
 
 interface MathElement {
   type: 'number' | 'operator' | 'function' | 'fraction' | 'sqrt' | 'power' | 'variable' | 'placeholder' | 'parentheses' | 'superscript' | 'subscript';
@@ -37,11 +38,12 @@ const VisualCalculator: React.FC = () => {
   const [activeElementId, setActiveElementId] = useState<string>('root');
   const [result, setResult] = useState<string>('');
   const [history, setHistory] = useState<Array<{input: string, output: string}>>([]);
-  const [currentTab, setCurrentTab] = useState<string>('main'); // 'main', 'functions', 'trig', 'calculus'
+  const [currentTab, setCurrentTab] = useState<string>('main');
   const { toast } = useToast();
   const editorRef = useRef<HTMLDivElement>(null);
   const [cursorPosition, setCursorPosition] = useState<number>(0);
-  const [lastClickedPosition, setLastClickedPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  const [hoveredElementId, setHoveredElementId] = useState<string | null>(null);
 
   const generateId = () => `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -66,10 +68,15 @@ const VisualCalculator: React.FC = () => {
 
     // Add visual cursor for selected elements
     const addCursor = (latex: string): string => {
-      if (element.selected && element.cursorPosition !== undefined) {
+      if (element.id === selectedElement && element.cursorPosition !== undefined) {
         const pos = Math.min(element.cursorPosition, latex.length);
         return `${latex.slice(0, pos)}\\textcolor{cyan}{|}${latex.slice(pos)}`;
       }
+      
+      if (element.id === hoveredElementId) {
+        return `\\textcolor{green}{${latex}}`;
+      }
+      
       return latex;
     };
 
@@ -89,51 +96,82 @@ const VisualCalculator: React.FC = () => {
         return addCursor(opMap[element.value] || element.value);
         
       case 'function':
+        const funcName = addCursor(`\\operatorname{${element.value}}`);
+        let args = '';
         if (element.children && element.children.length > 0) {
-          const args = element.children.map(elementToLatex).join(',');
-          return `\\operatorname{${element.value}}\\left(${args}\\right)`;
+          args = element.children.map(elementToLatex).join(',');
+          return `${funcName}\\left(${args}\\right)`;
         }
-        return `\\operatorname{${element.value}}\\left(\\right)`;
+        // If it's selected, show cursor inside the empty parentheses
+        if (element.id === selectedElement) {
+          return `${funcName}\\left(\\textcolor{cyan}{|}\\right)`;
+        }
+        return `${funcName}\\left(\\right)`;
         
       case 'fraction':
         if (element.children && element.children.length === 2) {
-          return `\\frac{${elementToLatex(element.children[0])}}{${elementToLatex(element.children[1])}}`;
+          const numerator = elementToLatex(element.children[0]);
+          const denominator = elementToLatex(element.children[1]);
+          return addCursor(`\\frac{${numerator}}{${denominator}}`);
         }
-        return '\\frac{}{}';
+        return addCursor('\\frac{}{}');
         
       case 'sqrt':
         if (element.children && element.children.length === 1) {
-          return `\\sqrt{${elementToLatex(element.children[0])}}`;
+          const content = elementToLatex(element.children[0]);
+          return addCursor(`\\sqrt{${content}}`);
         }
-        return '\\sqrt{}';
+        // If selected, show cursor inside
+        if (element.id === selectedElement) {
+          return addCursor('\\sqrt{\\textcolor{cyan}{|}}');
+        }
+        return addCursor('\\sqrt{}');
         
       case 'power':
         if (element.children && element.children.length === 2) {
-          return `{${elementToLatex(element.children[0])}}^{${elementToLatex(element.children[1])}}`;
+          const base = elementToLatex(element.children[0]);
+          const exponent = elementToLatex(element.children[1]);
+          return addCursor(`{${base}}^{${exponent}}`);
         }
-        return '{}^{}';
+        // If selected, show cursor in base or exponent
+        if (element.id === selectedElement) {
+          return addCursor('{\\textcolor{cyan}{|}}^{}');
+        }
+        return addCursor('{}^{}');
         
       case 'parentheses':
         if (element.children && element.children.length > 0) {
-          return element.children.map(elementToLatex).join('');
+          const content = element.children.map(elementToLatex).join('');
+          if (element.id === 'root') {
+            return content;
+          }
+          return addCursor(`\\left(${content}\\right)`);
         }
-        return '';
+        // If selected and empty, show cursor inside
+        if (element.id === selectedElement) {
+          return addCursor('\\left(\\textcolor{cyan}{|}\\right)');
+        } else if (element.id === 'root') {
+          return ''; // Empty root doesn't show anything
+        }
+        return addCursor('\\left(\\right)');
         
       case 'superscript':
         if (element.children && element.children.length === 1) {
-          return `^{${elementToLatex(element.children[0])}}`;
+          const content = elementToLatex(element.children[0]);
+          return addCursor(`^{${content}}`);
         }
-        return '^{}';
+        return addCursor('^{}');
         
       case 'subscript':
         if (element.children && element.children.length === 1) {
-          return `_{${elementToLatex(element.children[0])}}`;
+          const content = elementToLatex(element.children[0]);
+          return addCursor(`_{${content}}`);
         }
-        return '_{}';
+        return addCursor('_{}');
         
       case 'placeholder':
-        if (element.selected) {
-          return '\\textcolor{cyan}{\\square}';
+        if (element.id === selectedElement) {
+          return '\\textcolor{cyan}{\\square|}';
         }
         return '\\square';
         
@@ -145,7 +183,7 @@ const VisualCalculator: React.FC = () => {
   // Get the parent element and position for a given element
   const getParentInfo = (elementId: string): {parentId: string, index: number} => {
     const parent = Object.values(elements).find(el => 
-      el.children.includes(elementId)
+      el.children && el.children.includes(elementId)
     );
     
     if (parent) {
@@ -168,7 +206,7 @@ const VisualCalculator: React.FC = () => {
     };
     
     let newElements = { ...elements };
-    const active = newElements[activeElementId];
+    const active = activeElementId ? newElements[activeElementId] : null;
     
     if (!active) {
       // If no active element, add to root
@@ -183,29 +221,52 @@ const VisualCalculator: React.FC = () => {
         newElements[newId] = newElement;
         delete newElements[activeElementId];
       }
+    } else if (active.type === 'function' && active.children.length === 0) {
+      // Add as first child to empty function
+      active.children.push(newId);
+      newElements[newId] = newElement;
+    } else if (active.type === 'parentheses' || active.type === 'sqrt' || 
+               active.type === 'fraction' || active.type === 'power') {
+      // Add to the active structure element if it has space
+      if (active.children.length === 0 || 
+          (active.type === 'fraction' && active.children.length < 2) ||
+          (active.type === 'power' && active.children.length < 2)) {
+        active.children.push(newId);
+        newElements[newId] = newElement;
+      } else {
+        // For structures that already have their required children,
+        // add to the parent at the next position
+        const { parentId, index } = getParentInfo(activeElementId);
+        if (parentId && index !== -1) {
+          const parent = newElements[parentId];
+          parent.children.splice(index + 1, 0, newId);
+          newElements[newId] = newElement;
+        }
+      }
     } else {
-      // Insert at the active element's parent
+      // For other element types, add to the parent at the next position
       const { parentId, index } = getParentInfo(activeElementId);
       if (parentId && index !== -1) {
         const parent = newElements[parentId];
         parent.children.splice(index + 1, 0, newId);
         newElements[newId] = newElement;
-      } else if (active.children) {
-        // Add to active element's children if it can contain children
-        active.children.push(newId);
+      } else {
+        // Fallback to root if we couldn't find the parent
+        newElements.root.children.push(newId);
         newElements[newId] = newElement;
       }
     }
     
     setElements(newElements);
     setActiveElementId(newId);
+    setSelectedElement(newId);
   };
 
   // Add a structure (fraction, sqrt, etc.) at the active position
-  const addStructure = (type: 'fraction' | 'sqrt' | 'power' | 'parentheses') => {
+  const addStructure = (type: 'fraction' | 'sqrt' | 'power' | 'parentheses' | 'function', funcName?: string) => {
     const newId = generateId();
     const placeholderId1 = generateId();
-    const placeholderId2 = type !== 'sqrt' && type !== 'parentheses' ? generateId() : undefined;
+    const placeholderId2 = type === 'fraction' || type === 'power' ? generateId() : undefined;
     
     const placeholder1: MathElement = {
       type: 'placeholder',
@@ -228,11 +289,11 @@ const VisualCalculator: React.FC = () => {
     
     const childrenIds = placeholderId2 
       ? [placeholderId1, placeholderId2] 
-      : [placeholderId1];
+      : type === 'function' ? [] : [placeholderId1];
       
     const newElement: MathElement = {
       type,
-      value: type,
+      value: type === 'function' ? funcName || 'sin' : type,
       id: newId,
       children: childrenIds
     };
@@ -247,7 +308,7 @@ const VisualCalculator: React.FC = () => {
       newElements[placeholderId2!] = placeholder2;
     }
     
-    const active = newElements[activeElementId];
+    const active = activeElementId ? newElements[activeElementId] : null;
     
     if (!active) {
       // If no active element, add to root
@@ -266,14 +327,22 @@ const VisualCalculator: React.FC = () => {
       if (parentId && index !== -1) {
         const parent = newElements[parentId];
         parent.children.splice(index + 1, 0, newId);
-      } else if (active.children) {
-        // Add to active element's children if it can contain children
-        active.children.push(newId);
+      } else {
+        // Fallback to root
+        newElements.root.children.push(newId);
       }
     }
     
     setElements(newElements);
-    setActiveElementId(placeholderId1);
+    
+    // Set active element to the structure or first placeholder
+    if (type === 'function') {
+      setActiveElementId(newId);
+      setSelectedElement(newId);
+    } else {
+      setActiveElementId(placeholderId1);
+      setSelectedElement(placeholderId1);
+    }
   };
 
   // Convert elements to evaluable expression
@@ -283,9 +352,11 @@ const VisualCalculator: React.FC = () => {
 
     switch (element.type) {
       case 'number':
+        return element.value;
+        
       case 'variable':
-        if (element.value === 'pi') return 'Math.PI';
-        if (element.value === 'e') return 'Math.E';
+        if (element.value === 'pi') return 'pi';
+        if (element.value === 'e') return 'e';
         return element.value;
         
       case 'operator':
@@ -293,9 +364,9 @@ const VisualCalculator: React.FC = () => {
         
       case 'function':
         if (element.children && element.children.length > 0) {
-          return `Math.${element.value}(${element.children.map(elementToEvaluable).join(',')})`;
+          return `${element.value}(${element.children.map(elementToEvaluable).join(',')})`;
         }
-        return `Math.${element.value}()`;
+        return `${element.value}()`;
         
       case 'fraction':
         if (element.children && element.children.length === 2) {
@@ -305,21 +376,25 @@ const VisualCalculator: React.FC = () => {
         
       case 'sqrt':
         if (element.children && element.children.length === 1) {
-          return `Math.sqrt(${elementToEvaluable(element.children[0])})`;
+          return `sqrt(${elementToEvaluable(element.children[0])})`;
         }
-        return 'Math.sqrt(0)';
+        return 'sqrt(0)';
         
       case 'power':
         if (element.children && element.children.length === 2) {
-          return `Math.pow(${elementToEvaluable(element.children[0])}, ${elementToEvaluable(element.children[1])})`;
+          return `(${elementToEvaluable(element.children[0])})^(${elementToEvaluable(element.children[1])})`;
         }
         return '0';
         
       case 'parentheses':
         if (element.children && element.children.length > 0) {
+          if (element.id === 'root') {
+            // Don't add extra parentheses for the root element
+            return element.children.map(elementToEvaluable).join('');
+          }
           return `(${element.children.map(elementToEvaluable).join('')})`;
         }
-        return '(0)';
+        return element.id === 'root' ? '0' : '()';
         
       case 'superscript':
         if (element.children && element.children.length === 1) {
@@ -341,45 +416,42 @@ const VisualCalculator: React.FC = () => {
     }
   };
 
-  // Find and select the next element in tab order
-  const selectNextInput = () => {
-    const allElements = Object.values(elements);
-    if (allElements.length === 0) return;
-    
-    // If no active element, select the first one
-    if (!activeElementId || !elements[activeElementId]) {
-      setActiveElementId(allElements[0].id);
-      return;
-    }
-    
-    // Flatten the element tree into a traversable list
-    const flattenElements = (elementId: string, result: string[] = []): string[] => {
-      const element = elements[elementId];
-      if (!element) return result;
+  // Find next element by direction
+  const findNextElement = (direction: 'prev' | 'next'): string | null => {
+    // Flatten the element tree for navigation
+    const flattenElements = (root: string = 'root'): string[] => {
+      const result: string[] = [root];
+      const element = elements[root];
       
-      result.push(elementId);
-      if (element.children) {
+      if (element && element.children) {
         for (const childId of element.children) {
-          flattenElements(childId, result);
+          result.push(...flattenElements(childId));
         }
       }
+      
       return result;
     };
     
-    const flatList = flattenElements('root');
-    const currentIndex = flatList.indexOf(activeElementId);
+    const flatten = flattenElements();
+    const currentIndex = flatten.indexOf(activeElementId);
     
-    if (currentIndex === -1 || currentIndex === flatList.length - 1) {
-      // If at the end, loop back to the beginning
-      setActiveElementId(flatList[0]);
+    if (currentIndex === -1) return 'root';
+    
+    if (direction === 'next') {
+      return currentIndex < flatten.length - 1 ? flatten[currentIndex + 1] : flatten[0];
     } else {
-      // Otherwise, select the next element
-      setActiveElementId(flatList[currentIndex + 1]);
+      return currentIndex > 0 ? flatten[currentIndex - 1] : flatten[flatten.length - 1];
     }
   };
 
   // Navigate through the equation structure
   const navigateStructure = (direction: 'up' | 'down' | 'left' | 'right') => {
+    if (!activeElementId) {
+      setActiveElementId('root');
+      setSelectedElement('root');
+      return;
+    }
+    
     const activeElement = elements[activeElementId];
     if (!activeElement) return;
     
@@ -396,18 +468,23 @@ const VisualCalculator: React.FC = () => {
         : Math.min(parent.children.length - 1, index + 1);
         
       if (newIndex !== index) {
-        setActiveElementId(parent.children[newIndex]);
+        const newActiveId = parent.children[newIndex];
+        setActiveElementId(newActiveId);
+        setSelectedElement(newActiveId);
       }
     } else if (direction === 'up') {
       // For up, move to the parent
       const { parentId } = getParentInfo(activeElementId);
       if (parentId && elements[parentId]) {
         setActiveElementId(parentId);
+        setSelectedElement(parentId);
       }
     } else if (direction === 'down') {
       // For down, move to the first child
       if (activeElement.children && activeElement.children.length > 0) {
-        setActiveElementId(activeElement.children[0]);
+        const firstChildId = activeElement.children[0];
+        setActiveElementId(firstChildId);
+        setSelectedElement(firstChildId);
       }
     }
   };
@@ -415,28 +492,44 @@ const VisualCalculator: React.FC = () => {
   // Calculate the result of the expression
   const calculateResult = () => {
     try {
-      const expression = elementToEvaluable('root');
-      if (!expression.trim() || expression === '(0)') {
-        toast({
-          title: "Empty Expression",
-          description: "Please enter a mathematical expression",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Use safer approach with Function constructor
-      const calculationFunction = new Function(`return ${expression}`);
-      const calculatedResult = calculationFunction();
-      
-      const resultStr = typeof calculatedResult === 'number' 
-        ? Number.isInteger(calculatedResult) 
-          ? calculatedResult.toString() 
-          : calculatedResult.toFixed(4).replace(/\.?0+$/, '')
-        : calculatedResult.toString();
-      
+      // Convert to LaTeX for display
       const inputLatex = elementToLatex('root');
       
+      // Check if it's an equation
+      const mathJsExpression = elementToEvaluable('root');
+      const isEquation = mathJsExpression.includes('=');
+      
+      let resultStr;
+      
+      if (isEquation) {
+        // Try to solve the equation
+        resultStr = solveEquation(mathJsExpression);
+      } else {
+        // Evaluate the expression
+        const hasVariables = mathJsExpression.includes('x') || 
+                            mathJsExpression.includes('y') ||
+                            mathJsExpression.includes('z');
+        
+        if (hasVariables) {
+          // For expressions with variables, just simplify
+          resultStr = mathJsExpression;
+        } else {
+          try {
+            // For pure numeric expressions, evaluate
+            const calculatedResult = evaluate(mathJsExpression);
+            resultStr = typeof calculatedResult === 'number' 
+              ? Number.isInteger(calculatedResult) 
+                ? calculatedResult.toString() 
+                : calculatedResult.toFixed(4).replace(/\.?0+$/, '')
+              : calculatedResult.toString();
+          } catch (error) {
+            console.error('Evaluation error:', error);
+            resultStr = "Error: Invalid expression";
+          }
+        }
+      }
+      
+      // Set the result and update history
       setResult(`${inputLatex} = ${resultStr}`);
       setHistory(prev => [...prev, { input: inputLatex, output: resultStr }]);
       
@@ -466,6 +559,7 @@ const VisualCalculator: React.FC = () => {
       }
     });
     setActiveElementId('root');
+    setSelectedElement('root');
     setCursorPosition(0);
     setResult('');
   };
@@ -480,35 +574,43 @@ const VisualCalculator: React.FC = () => {
     const newElements = {...elements};
     const parent = newElements[parentId];
     
-    // Simply remove the element from its parent
+    // Remove the element from its parent
     parent.children.splice(index, 1);
     
-    // Recursively delete children
+    // Recursively delete element and its children
     const deleteRecursive = (elementId: string) => {
-      const element = elements[elementId];
+      const element = newElements[elementId];
       if (!element) return;
       
       if (element.children && element.children.length > 0) {
-        element.children.forEach(deleteRecursive);
+        [...element.children].forEach(deleteRecursive);
       }
       
       delete newElements[elementId];
     };
     
-    deleteRecursive(activeElementId);
+    deleteActiveElement(activeElementId);
     
     // Set active element to parent or previous sibling
-    const newActiveId = parent.children[Math.max(0, index - 1)] || parentId;
+    const newActiveId = index > 0 
+      ? parent.children[index - 1] 
+      : parent.children[0] || parentId;
     
     setElements(newElements);
-    setActiveElementId(newActiveId);
+    setActiveElementId(newActiveId || 'root');
+    setSelectedElement(newActiveId || 'root');
   };
 
-  // Handle keyboard events
+  // Handle direct keyboard input
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Navigation keys
     if (e.key === 'Tab') {
       e.preventDefault();
-      selectNextInput();
+      const nextElement = findNextElement(e.shiftKey ? 'prev' : 'next');
+      if (nextElement) {
+        setActiveElementId(nextElement);
+        setSelectedElement(nextElement);
+      }
     } else if (e.key === 'Backspace' || e.key === 'Delete') {
       e.preventDefault();
       deleteActiveElement();
@@ -527,26 +629,39 @@ const VisualCalculator: React.FC = () => {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       calculateResult();
-    } else if (/^[0-9+\-*/=.()a-zA-Z,]$/.test(e.key)) {
+    }
+    // Direct input for numbers, operators, and variables
+    else if (/^[0-9.]$/.test(e.key)) {
       e.preventDefault();
-      
-      if (/^[0-9.]$/.test(e.key)) {
-        addElement('number', e.key);
-      } else if (/^[+\-*/=]$/.test(e.key)) {
-        addElement('operator', e.key);
-      } else if (/^[a-zA-Z]$/.test(e.key)) {
-        addElement('variable', e.key);
-      } else if (e.key === '(') {
-        addStructure('parentheses');
-      }
+      addElement('number', e.key);
+    } else if (/^[+\-*/=]$/.test(e.key)) {
+      e.preventDefault();
+      addElement('operator', e.key);
+    } else if (/^[a-zA-Z]$/.test(e.key)) {
+      e.preventDefault();
+      addElement('variable', e.key);
+    } else if (e.key === '(') {
+      e.preventDefault();
+      addStructure('parentheses');
+    } else if (e.key === ')') {
+      e.preventDefault();
+      // Find parent parenthesis and move cursor after it
+      navigateStructure('up');
+      navigateStructure('right');
+    } else if (e.key === '^') {
+      e.preventDefault();
+      addStructure('power');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      addStructure('fraction');
     }
   };
 
-  // Handle mouse clicks on elements
+  // Handle mouse click on an element
   const handleElementClick = (elementId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setActiveElementId(elementId);
-    setLastClickedPosition({x: e.clientX, y: e.clientY});
+    setSelectedElement(elementId);
     
     // Focus the editor to enable keyboard input
     editorRef.current?.focus();
@@ -554,37 +669,73 @@ const VisualCalculator: React.FC = () => {
 
   // Render tabbed button panels
   const renderTabContent = () => {
-    const buttonClass = "font-serif text-[12px] leading-none katex-font h-8";
+    const buttonClass = "font-serif text-[11px] leading-none h-7 w-full";
     
     switch (currentTab) {
       case 'main':
         return (
           <>
             <div className="grid grid-cols-5 gap-1">
-              <Button variant="outline" onClick={() => addElement('number', '7')} className={buttonClass} size="sm">7</Button>
-              <Button variant="outline" onClick={() => addElement('number', '8')} className={buttonClass} size="sm">8</Button>
-              <Button variant="outline" onClick={() => addElement('number', '9')} className={buttonClass} size="sm">9</Button>
-              <Button variant="outline" onClick={() => addElement('operator', '/')} className={buttonClass} size="sm"><Divide className="h-3 w-3" /></Button>
-              <Button variant="outline" onClick={deleteActiveElement} className={buttonClass} size="sm">Del</Button>
+              <Button variant="outline" onClick={() => addElement('number', '7')} className={buttonClass} size="sm">
+                <span className="katex-font">7</span>
+              </Button>
+              <Button variant="outline" onClick={() => addElement('number', '8')} className={buttonClass} size="sm">
+                <span className="katex-font">8</span>
+              </Button>
+              <Button variant="outline" onClick={() => addElement('number', '9')} className={buttonClass} size="sm">
+                <span className="katex-font">9</span>
+              </Button>
+              <Button variant="outline" onClick={() => addElement('operator', '/')} className={buttonClass} size="sm">
+                <span className="katex-font">÷</span>
+              </Button>
+              <Button variant="outline" onClick={deleteActiveElement} className={buttonClass} size="sm">
+                <Delete className="h-3 w-3" />
+              </Button>
               
-              <Button variant="outline" onClick={() => addElement('number', '4')} className={buttonClass} size="sm">4</Button>
-              <Button variant="outline" onClick={() => addElement('number', '5')} className={buttonClass} size="sm">5</Button>
-              <Button variant="outline" onClick={() => addElement('number', '6')} className={buttonClass} size="sm">6</Button>
-              <Button variant="outline" onClick={() => addElement('operator', '*')} className={buttonClass} size="sm"><X className="h-3 w-3" /></Button>
-              <Button variant="outline" onClick={() => addStructure('parentheses')} className={buttonClass} size="sm"><Brackets className="h-3 w-3" /></Button>
+              <Button variant="outline" onClick={() => addElement('number', '4')} className={buttonClass} size="sm">
+                <span className="katex-font">4</span>
+              </Button>
+              <Button variant="outline" onClick={() => addElement('number', '5')} className={buttonClass} size="sm">
+                <span className="katex-font">5</span>
+              </Button>
+              <Button variant="outline" onClick={() => addElement('number', '6')} className={buttonClass} size="sm">
+                <span className="katex-font">6</span>
+              </Button>
+              <Button variant="outline" onClick={() => addElement('operator', '*')} className={buttonClass} size="sm">
+                <span className="katex-font">×</span>
+              </Button>
+              <Button variant="outline" onClick={() => addStructure('parentheses')} className={buttonClass} size="sm">
+                <span className="katex-font">()</span>
+              </Button>
               
-              <Button variant="outline" onClick={() => addElement('number', '1')} className={buttonClass} size="sm">1</Button>
-              <Button variant="outline" onClick={() => addElement('number', '2')} className={buttonClass} size="sm">2</Button>
-              <Button variant="outline" onClick={() => addElement('number', '3')} className={buttonClass} size="sm">3</Button>
-              <Button variant="outline" onClick={() => addElement('operator', '-')} className={buttonClass} size="sm"><Minus className="h-3 w-3" /></Button>
+              <Button variant="outline" onClick={() => addElement('number', '1')} className={buttonClass} size="sm">
+                <span className="katex-font">1</span>
+              </Button>
+              <Button variant="outline" onClick={() => addElement('number', '2')} className={buttonClass} size="sm">
+                <span className="katex-font">2</span>
+              </Button>
+              <Button variant="outline" onClick={() => addElement('number', '3')} className={buttonClass} size="sm">
+                <span className="katex-font">3</span>
+              </Button>
+              <Button variant="outline" onClick={() => addElement('operator', '-')} className={buttonClass} size="sm">
+                <span className="katex-font">−</span>
+              </Button>
               <Button variant="outline" onClick={() => addStructure('power')} className={buttonClass} size="sm">
                 <span dangerouslySetInnerHTML={{ __html: renderLatex("x^n") }} />
               </Button>
               
-              <Button variant="outline" onClick={() => addElement('number', '0')} className={buttonClass} size="sm">0</Button>
-              <Button variant="outline" onClick={() => addElement('number', '.')} className={buttonClass} size="sm">.</Button>
-              <Button variant="outline" onClick={() => addElement('variable', 'x')} className={buttonClass} size="sm">x</Button>
-              <Button variant="outline" onClick={() => addElement('operator', '+')} className={buttonClass} size="sm"><Plus className="h-3 w-3" /></Button>
+              <Button variant="outline" onClick={() => addElement('number', '0')} className={buttonClass} size="sm">
+                <span className="katex-font">0</span>
+              </Button>
+              <Button variant="outline" onClick={() => addElement('number', '.')} className={buttonClass} size="sm">
+                <span className="katex-font">.</span>
+              </Button>
+              <Button variant="outline" onClick={() => addElement('variable', 'x')} className={buttonClass} size="sm">
+                <span className="katex-font">x</span>
+              </Button>
+              <Button variant="outline" onClick={() => addElement('operator', '+')} className={buttonClass} size="sm">
+                <span className="katex-font">+</span>
+              </Button>
               <Button variant="outline" onClick={() => addStructure('sqrt')} className={buttonClass} size="sm">
                 <span dangerouslySetInnerHTML={{ __html: renderLatex("\\sqrt{x}") }} />
               </Button>
@@ -593,86 +744,90 @@ const VisualCalculator: React.FC = () => {
                 <span dangerouslySetInnerHTML={{ __html: renderLatex("\\pi") }} />
               </Button>
               <Button variant="outline" onClick={() => addElement('variable', 'e')} className={buttonClass} size="sm">
-                <span dangerouslySetInnerHTML={{ __html: renderLatex("e") }} />
+                <span className="katex-font">e</span>
               </Button>
-              <Button variant="outline" onClick={() => addElement('operator', '=')} className={buttonClass} size="sm">=</Button>
+              <Button variant="outline" onClick={() => addElement('operator', '=')} className={buttonClass} size="sm">
+                <span className="katex-font">=</span>
+              </Button>
               <Button variant="outline" onClick={() => addStructure('fraction')} className={buttonClass} size="sm">
                 <span dangerouslySetInnerHTML={{ __html: renderLatex("\\frac{a}{b}") }} />
               </Button>
-              <Button variant="outline" onClick={calculateResult} className={buttonClass} size="sm">=</Button>
+              <Button variant="outline" onClick={calculateResult} className={buttonClass} size="sm">
+                <Equal className="h-3 w-3" />
+              </Button>
             </div>
           </>
         );
       case 'functions':
         return (
           <div className="grid grid-cols-4 gap-1">
-            <Button variant="outline" onClick={() => addElement('function', 'sin')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\sin") }} />
+            <Button variant="outline" onClick={() => addStructure('function', 'sin')} className={buttonClass} size="sm">
+              <span className="katex-font">sin</span>
             </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'cos')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\cos") }} />
+            <Button variant="outline" onClick={() => addStructure('function', 'cos')} className={buttonClass} size="sm">
+              <span className="katex-font">cos</span>
             </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'tan')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\tan") }} />
+            <Button variant="outline" onClick={() => addStructure('function', 'tan')} className={buttonClass} size="sm">
+              <span className="katex-font">tan</span>
             </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'cot')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\cot") }} />
-            </Button>
-            
-            <Button variant="outline" onClick={() => addElement('function', 'asin')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\arcsin") }} />
-            </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'acos')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\arccos") }} />
-            </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'atan')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\arctan") }} />
-            </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'atan2')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\arctan_2") }} />
+            <Button variant="outline" onClick={() => addStructure('function', 'cot')} className={buttonClass} size="sm">
+              <span className="katex-font">cot</span>
             </Button>
             
-            <Button variant="outline" onClick={() => addElement('function', 'log')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\log") }} />
+            <Button variant="outline" onClick={() => addStructure('function', 'asin')} className={buttonClass} size="sm">
+              <span className="katex-font">arcsin</span>
             </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'log10')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\log_{10}") }} />
+            <Button variant="outline" onClick={() => addStructure('function', 'acos')} className={buttonClass} size="sm">
+              <span className="katex-font">arccos</span>
             </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'log2')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\log_{2}") }} />
+            <Button variant="outline" onClick={() => addStructure('function', 'atan')} className={buttonClass} size="sm">
+              <span className="katex-font">arctan</span>
             </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'ln')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\ln") }} />
+            <Button variant="outline" onClick={() => addStructure('function', 'atan2')} className={buttonClass} size="sm">
+              <span className="katex-font">arctan₂</span>
+            </Button>
+            
+            <Button variant="outline" onClick={() => addStructure('function', 'log')} className={buttonClass} size="sm">
+              <span className="katex-font">log</span>
+            </Button>
+            <Button variant="outline" onClick={() => addStructure('function', 'log10')} className={buttonClass} size="sm">
+              <span className="katex-font">log₁₀</span>
+            </Button>
+            <Button variant="outline" onClick={() => addStructure('function', 'log2')} className={buttonClass} size="sm">
+              <span className="katex-font">log₂</span>
+            </Button>
+            <Button variant="outline" onClick={() => addStructure('function', 'ln')} className={buttonClass} size="sm">
+              <span className="katex-font">ln</span>
             </Button>
           </div>
         );
       case 'calculus':
         return (
           <div className="grid grid-cols-4 gap-1">
-            <Button variant="outline" onClick={() => addElement('function', 'diff')} className={buttonClass} size="sm">
+            <Button variant="outline" onClick={() => addStructure('function', 'diff')} className={buttonClass} size="sm">
               <span dangerouslySetInnerHTML={{ __html: renderLatex("\\frac{d}{dx}") }} />
             </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'int')} className={buttonClass} size="sm">
+            <Button variant="outline" onClick={() => addStructure('function', 'int')} className={buttonClass} size="sm">
               <span dangerouslySetInnerHTML={{ __html: renderLatex("\\int") }} />
             </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'sum')} className={buttonClass} size="sm">
+            <Button variant="outline" onClick={() => addStructure('function', 'sum')} className={buttonClass} size="sm">
               <span dangerouslySetInnerHTML={{ __html: renderLatex("\\sum") }} />
             </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'prod')} className={buttonClass} size="sm">
+            <Button variant="outline" onClick={() => addStructure('function', 'prod')} className={buttonClass} size="sm">
               <span dangerouslySetInnerHTML={{ __html: renderLatex("\\prod") }} />
             </Button>
             
             <Button variant="outline" onClick={() => addElement('variable', 'dx')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("dx") }} />
+              <span className="katex-font">dx</span>
             </Button>
             <Button variant="outline" onClick={() => addElement('variable', 'dy')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("dy") }} />
+              <span className="katex-font">dy</span>
             </Button>
             <Button variant="outline" onClick={() => addElement('variable', 'dt')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("dt") }} />
+              <span className="katex-font">dt</span>
             </Button>
-            <Button variant="outline" onClick={() => addElement('function', 'lim')} className={buttonClass} size="sm">
-              <span dangerouslySetInnerHTML={{ __html: renderLatex("\\lim") }} />
+            <Button variant="outline" onClick={() => addStructure('function', 'lim')} className={buttonClass} size="sm">
+              <span className="katex-font">lim</span>
             </Button>
           </div>
         );
@@ -684,29 +839,45 @@ const VisualCalculator: React.FC = () => {
   // Render the math editor
   const renderEditor = () => {
     // Map element IDs to their rendered elements for click handling
-    const renderElementWithClick = (elementId: string) => {
-      const elem = document.getElementById(`math-elem-${elementId}`);
-      if (elem) {
-        elem.onclick = (e: any) => handleElementClick(elementId, e);
-      }
-    };
+    useEffect(() => {
+      const addClickHandlers = () => {
+        // For each element, find corresponding DOM element and add click handler
+        Object.keys(elements).forEach(id => {
+          const elem = document.getElementById(`math-elem-${id}`);
+          if (elem) {
+            elem.onclick = (e: any) => handleElementClick(id, e);
+            
+            // Add hover handler
+            elem.onmouseenter = () => setHoveredElementId(id);
+            elem.onmouseleave = () => setHoveredElementId(null);
+          }
+        });
+      };
+      
+      // Add handlers after a short delay to ensure DOM is updated
+      setTimeout(addClickHandlers, 50);
+    }, [elements, activeElementId]);
     
-    // Add clickable attributes to rendered LaTeX
-    const enhanceLatexWithClicks = (latex: string) => {
-      let enhancedLatex = latex;
+    // Generate HTML with click attributes for each element
+    const generateHtmlWithIds = () => {
+      // Get the LaTeX representation
+      const latex = elementToLatex('root');
+      
+      // Render it through KaTeX
+      const html = renderLatex(latex);
+      
+      // Add IDs to each element for click handling
+      // We'll use a data attribute to identify elements
+      let enhancedHtml = html;
       Object.keys(elements).forEach(id => {
-        enhancedLatex = enhancedLatex.replace(
-          new RegExp(`<span class="katex-html" aria-hidden="true">(.*?)</span>`, 'g'),
-          `<span id="math-elem-${id}" class="katex-html cursor-pointer" aria-hidden="true">$1</span>`
+        enhancedHtml = enhancedHtml.replace(
+          /<span class="katex-html"([^>]*)>/g,
+          `<span id="math-elem-${id}" class="katex-html cursor-pointer"$1 data-element-id="${id}">`
         );
       });
-      return enhancedLatex;
+      
+      return enhancedHtml;
     };
-    
-    // Add click handler to math elements after rendering
-    useEffect(() => {
-      Object.keys(elements).forEach(renderElementWithClick);
-    }, [elements, activeElementId]);
     
     return (
       <div 
@@ -715,57 +886,20 @@ const VisualCalculator: React.FC = () => {
         onClick={() => {
           editorRef.current?.focus();
           setActiveElementId('root');
+          setSelectedElement('root');
         }}
         onKeyDown={handleKeyDown}
         tabIndex={0}
       >
         <div
-          className="math-editor text-2xl katex-font"
+          className="math-editor text-xl katex-font"
           dangerouslySetInnerHTML={{ 
-            __html: renderLatex(elementToLatex('root'))
+            __html: generateHtmlWithIds()
           }}
         />
       </div>
     );
   };
-
-  // Update selected state for elements
-  useEffect(() => {
-    setElements(prev => {
-      const newElements = { ...prev };
-      
-      Object.keys(newElements).forEach(id => {
-        if (newElements[id].selected) {
-          newElements[id] = { ...newElements[id], selected: false };
-        }
-      });
-      
-      if (newElements[activeElementId]) {
-        newElements[activeElementId] = { 
-          ...newElements[activeElementId], 
-          selected: true 
-        };
-      }
-      
-      return newElements;
-    });
-  }, [activeElementId]);
-
-  // Add focus handler for the editor
-  useEffect(() => {
-    const editorEl = editorRef.current;
-    if (!editorEl) return;
-    
-    const handleEditorClick = () => {
-      editorEl.focus();
-    };
-    
-    editorEl.addEventListener('click', handleEditorClick);
-    
-    return () => {
-      editorEl.removeEventListener('click', handleEditorClick);
-    };
-  }, []);
 
   // Add KaTeX font styles
   useEffect(() => {
@@ -784,6 +918,16 @@ const VisualCalculator: React.FC = () => {
       }
       .math-editor .katex:hover {
         background-color: rgba(32, 226, 215, 0.1);
+      }
+      
+      /* Improve visual feedback for selected elements */
+      .math-editor [data-element-id]:hover {
+        background-color: rgba(32, 226, 215, 0.2);
+      }
+      
+      /* Style for LaTeX buttons */
+      button .katex {
+        font-size: 0.9em;
       }
     `;
     document.head.appendChild(styleElement);
