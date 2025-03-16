@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -92,12 +93,26 @@ const VisualCalculator: React.FC = () => {
         return addCursor(opMap[element.value] || element.value);
         
       case 'function':
-        const funcName = addCursor(`\\operatorname{${element.value}}`);
-        let args = '';
-        if (element.children && element.children.length > 0) {
-          args = element.children.map(elementToLatex).join(',');
-          return `${funcName}\\left(${args}\\right)`;
+        let funcName = element.value;
+        const isTrigFunc = ['sin', 'cos', 'tan', 'cot', 'asin', 'acos', 'atan'].includes(funcName);
+        
+        if (isTrigFunc) {
+          funcName = `\\${funcName}`;
+        } else {
+          funcName = `\\operatorname{${funcName}}`;
         }
+        
+        if (element.children && element.children.length > 0) {
+          const args = element.children.map(elementToLatex).join(',');
+          const result = `${funcName}\\left(${args}\\right)`;
+          // For function, add cursor inside by default
+          if (element.id === selectedElement && element.cursorPosition === undefined) {
+            return result.replace(args, `${args}\\textcolor{cyan}{|}`);
+          }
+          return result;
+        }
+        
+        // Empty function with cursor inside parentheses
         if (element.id === selectedElement) {
           return `${funcName}\\left(\\textcolor{cyan}{|}\\right)`;
         }
@@ -107,17 +122,36 @@ const VisualCalculator: React.FC = () => {
         if (element.children && element.children.length === 2) {
           const numerator = elementToLatex(element.children[0]);
           const denominator = elementToLatex(element.children[1]);
+          
+          // If selected but cursor position not specified, show cursor in numerator
+          if (element.id === selectedElement && element.cursorPosition === undefined) {
+            return `\\frac{${numerator}\\textcolor{cyan}{|}}{${denominator}}`;
+          }
+          
           return addCursor(`\\frac{${numerator}}{${denominator}}`);
+        }
+        
+        // Empty fraction with cursor in numerator
+        if (element.id === selectedElement) {
+          return `\\frac{\\textcolor{cyan}{|}}{}`; 
         }
         return addCursor('\\frac{}{}');
         
       case 'sqrt':
         if (element.children && element.children.length === 1) {
           const content = elementToLatex(element.children[0]);
+          
+          // If selected but cursor position not specified, show cursor inside
+          if (element.id === selectedElement && element.cursorPosition === undefined) {
+            return `\\sqrt{${content}\\textcolor{cyan}{|}}`;
+          }
+          
           return addCursor(`\\sqrt{${content}}`);
         }
+        
+        // Empty sqrt with cursor inside
         if (element.id === selectedElement) {
-          return addCursor('\\sqrt{\\textcolor{cyan}{|}}');
+          return `\\sqrt{\\textcolor{cyan}{|}}`; 
         }
         return addCursor('\\sqrt{}');
         
@@ -125,39 +159,85 @@ const VisualCalculator: React.FC = () => {
         if (element.children && element.children.length === 2) {
           const base = elementToLatex(element.children[0]);
           const exponent = elementToLatex(element.children[1]);
+          
+          // If selected but cursor position not specified, show cursor in base
+          if (element.id === selectedElement && element.cursorPosition === undefined) {
+            return `{${base}\\textcolor{cyan}{|}}^{${exponent}}`;
+          }
+          
           return addCursor(`{${base}}^{${exponent}}`);
         }
+        
+        // Empty power with cursor in base
         if (element.id === selectedElement) {
-          return addCursor('{\\textcolor{cyan}{|}}^{}');
+          return `{\\textcolor{cyan}{|}}^{}`; 
         }
         return addCursor('{}^{}');
         
       case 'parentheses':
         if (element.children && element.children.length > 0) {
           const content = element.children.map(elementToLatex).join('');
+          
           if (element.id === 'root') {
+            // For root element, add cursor at end if selected
+            if (element.id === selectedElement) {
+              return `${content}\\textcolor{cyan}{|}`;
+            }
             return content;
           }
+          
+          // If selected but cursor position not specified, show cursor inside
+          if (element.id === selectedElement && element.cursorPosition === undefined) {
+            return `\\left(${content}\\textcolor{cyan}{|}\\right)`;
+          }
+          
           return addCursor(`\\left(${content}\\right)`);
         }
-        if (element.id === selectedElement) {
-          return addCursor('\\left(\\textcolor{cyan}{|}\\right)');
+        
+        // Empty parentheses with cursor inside
+        if (element.id === selectedElement && element.id !== 'root') {
+          return `\\left(\\textcolor{cyan}{|}\\right)`;
+        } else if (element.id === 'root' && element.id === selectedElement) {
+          return `\\textcolor{cyan}{|}`;
         } else if (element.id === 'root') {
           return '';
         }
+        
         return addCursor('\\left(\\right)');
         
       case 'superscript':
         if (element.children && element.children.length === 1) {
           const content = elementToLatex(element.children[0]);
+          
+          // If selected but cursor position not specified, show cursor inside
+          if (element.id === selectedElement && element.cursorPosition === undefined) {
+            return `^{${content}\\textcolor{cyan}{|}}`;
+          }
+          
           return addCursor(`^{${content}}`);
+        }
+        
+        // Empty superscript with cursor inside
+        if (element.id === selectedElement) {
+          return `^{\\textcolor{cyan}{|}}`; 
         }
         return addCursor('^{}');
         
       case 'subscript':
         if (element.children && element.children.length === 1) {
           const content = elementToLatex(element.children[0]);
+          
+          // If selected but cursor position not specified, show cursor inside
+          if (element.id === selectedElement && element.cursorPosition === undefined) {
+            return `_{${content}\\textcolor{cyan}{|}}`;
+          }
+          
           return addCursor(`_{${content}}`);
+        }
+        
+        // Empty subscript with cursor inside
+        if (element.id === selectedElement) {
+          return `_{\\textcolor{cyan}{|}}`; 
         }
         return addCursor('_{}');
         
@@ -532,21 +612,27 @@ const VisualCalculator: React.FC = () => {
     const newElements = {...elements};
     const parent = newElements[parentId];
     
+    // Remove the element from its parent's children array
     parent.children.splice(index, 1);
     
+    // Recursive function to delete an element and all its children
     const deleteRecursive = (elementId: string) => {
       const element = newElements[elementId];
       if (!element) return;
       
+      // Delete all children recursively
       if (element.children && element.children.length > 0) {
         [...element.children].forEach(deleteRecursive);
       }
       
+      // Delete the element itself
       delete newElements[elementId];
     };
     
+    // Delete the active element and all its children
     deleteRecursive(activeElementId);
     
+    // Select the previous element, the next element, or the parent
     const newActiveId = index > 0 
       ? parent.children[index - 1] 
       : parent.children[0] || parentId;
@@ -786,30 +872,75 @@ const VisualCalculator: React.FC = () => {
   const renderEditor = () => {
     useEffect(() => {
       const addClickHandlers = () => {
-        Object.keys(elements).forEach(id => {
-          const elem = document.getElementById(`math-elem-${id}`);
-          if (elem) {
-            elem.onclick = (e: any) => handleElementClick(id, e);
+        document.querySelectorAll('[data-element-id]').forEach((elem) => {
+          const id = elem.getAttribute('data-element-id');
+          if (id) {
+            elem.addEventListener('click', (e: any) => {
+              e.stopPropagation();
+              handleElementClick(id, e);
+            });
             
-            elem.onmouseenter = () => setHoveredElementId(id);
-            elem.onmouseleave = () => setHoveredElementId(null);
+            elem.addEventListener('mouseenter', () => setHoveredElementId(id));
+            elem.addEventListener('mouseleave', () => setHoveredElementId(null));
           }
         });
       };
       
-      setTimeout(addClickHandlers, 50);
+      // Add a small delay to ensure DOM is ready
+      setTimeout(addClickHandlers, 10);
+      
+      return () => {
+        // Clean up event listeners
+        document.querySelectorAll('[data-element-id]').forEach((elem) => {
+          const id = elem.getAttribute('data-element-id');
+          if (id) {
+            elem.removeEventListener('click', (e: any) => handleElementClick(id, e));
+            elem.removeEventListener('mouseenter', () => setHoveredElementId(id));
+            elem.removeEventListener('mouseleave', () => setHoveredElementId(null));
+          }
+        });
+      };
     }, [elements, activeElementId]);
     
     const generateHtmlWithIds = () => {
       const latex = elementToLatex('root');
-      
       const html = renderLatex(latex);
       
+      // Add data-element-id attributes to all elements
       let enhancedHtml = html;
       Object.keys(elements).forEach(id => {
+        const element = elements[id];
+        const elementType = element.type;
+        
+        // Create specific selectors for different element types
+        let selector;
+        switch (elementType) {
+          case 'function':
+            selector = element.value.includes('sin') || element.value.includes('cos') || 
+                       element.value.includes('tan') ?
+                       `.katex .mop-${element.value}` : `.katex .mop`;
+            break;
+          case 'fraction':
+            selector = '.katex .mfrac';
+            break;
+          case 'sqrt':
+            selector = '.katex .sqrt';
+            break;
+          case 'number':
+          case 'variable':
+            selector = '.katex .mord';
+            break;
+          case 'operator':
+            selector = '.katex .mbin, .katex .mrel';
+            break;
+          default:
+            selector = '.katex .katex-html';
+        }
+        
+        // Replace the appropriate parts of the HTML with data-element-id attributes
         enhancedHtml = enhancedHtml.replace(
-          /<span class="katex-html"([^>]*)>/g,
-          `<span id="math-elem-${id}" class="katex-html cursor-pointer"$1 data-element-id="${id}">`
+          new RegExp(`<span class="katex-html"([^>]*)>`, 'g'),
+          `<span class="katex-html"$1 data-element-id="${id}">`
         );
       });
       
@@ -858,10 +989,16 @@ const VisualCalculator: React.FC = () => {
       
       .math-editor [data-element-id]:hover {
         background-color: rgba(32, 226, 215, 0.2);
+        border-radius: 2px;
       }
       
       button .katex {
         font-size: 0.9em;
+      }
+      
+      /* Better cursor visibility */
+      .math-editor .katex .textcolor.textstyle.uncustomized {
+        cursor: text !important;
       }
     `;
     document.head.appendChild(styleElement);
