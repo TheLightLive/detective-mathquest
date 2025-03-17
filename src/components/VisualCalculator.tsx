@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { evaluate } from 'mathjs';
 import { 
-  Calculator, Plus, Minus, X, Divide, PiSquare, 
-  BarChart, Brackets, Equal, Sigma, Delete, keyboard
+  Calculator, Plus, Minus, X, Divide, Pi, 
+  BarChart, Brackets, Equal, Sigma, Delete, Keyboard
 } from "lucide-react";
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -43,6 +44,7 @@ const VisualCalculator: React.FC = () => {
   const [cursorPosition, setCursorPosition] = useState<number>(0);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
   const [hoveredElementId, setHoveredElementId] = useState<string | null>(null);
+  const [systemEquations, setSystemEquations] = useState<string[]>(['']);
 
   const generateId = () => `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -70,7 +72,7 @@ const VisualCalculator: React.FC = () => {
       }
       
       if (element.id === hoveredElementId) {
-        return `\\textcolor{green}{${latex}}`;
+        return `\\textcolor{cyan}{${latex}}`;
       }
       
       return latex;
@@ -530,12 +532,16 @@ const VisualCalculator: React.FC = () => {
       
       const mathJsExpression = elementToEvaluable('root');
       const isEquation = mathJsExpression.includes('=');
-      const isSystemOfEquations = mathJsExpression.includes('\n') && mathJsExpression.split('\n').every(eq => eq.includes('='));
       
       let resultStr;
       
-      if (isSystemOfEquations) {
-        resultStr = solveSystem(mathJsExpression);
+      if (currentTab === 'system') {
+        const validEquations = systemEquations.filter(eq => eq.trim() !== '' && eq.includes('='));
+        if (validEquations.length >= 2) {
+          resultStr = solveSystem(validEquations.join('\n'));
+        } else {
+          resultStr = "Need at least 2 equations for a system";
+        }
       } else if (isEquation) {
         resultStr = solveEquation(mathJsExpression);
       } else {
@@ -591,6 +597,7 @@ const VisualCalculator: React.FC = () => {
     setSelectedElement('root');
     setCursorPosition(0);
     setResult('');
+    setSystemEquations(['']);
   };
 
   const deleteActiveElement = () => {
@@ -683,14 +690,25 @@ const VisualCalculator: React.FC = () => {
     editorRef.current?.focus();
   };
 
+  const handleSystemEquationChange = (index: number, value: string) => {
+    const newEquations = [...systemEquations];
+    newEquations[index] = value;
+    setSystemEquations(newEquations);
+    
+    // Add a new empty line if we're on the last line
+    if (index === systemEquations.length - 1 && value.trim() !== '') {
+      setSystemEquations([...newEquations, '']);
+    }
+  };
+
   const renderTabContent = () => {
-    const buttonClass = "font-mono text-xl h-12 w-12 p-0 flex items-center justify-center";
+    const buttonClass = "font-mono text-2xl h-14 w-14 flex items-center justify-center";
     
     switch (currentTab) {
       case 'main':
         return (
           <>
-            <div className="grid grid-cols-5 gap-1.5 mx-auto max-w-sm">
+            <div className="grid grid-cols-5 gap-2 mx-auto max-w-md">
               <Button variant="outline" onClick={() => addElement('number', '7')} className={buttonClass} size="sm">
                 7
               </Button>
@@ -767,7 +785,7 @@ const VisualCalculator: React.FC = () => {
               <Button variant="outline" onClick={() => addStructure('fraction')} className={buttonClass} size="sm">
                 a/b
               </Button>
-              <Button variant="outline" onClick={calculateResult} className={`${buttonClass} bg-neon-cyan text-noir`} size="sm">
+              <Button variant="default" onClick={calculateResult} className={`${buttonClass} bg-neon-cyan text-noir`} size="sm">
                 =
               </Button>
             </div>
@@ -775,7 +793,7 @@ const VisualCalculator: React.FC = () => {
         );
       case 'functions':
         return (
-          <div className="grid grid-cols-4 gap-1.5 mx-auto max-w-sm">
+          <div className="grid grid-cols-4 gap-2 mx-auto max-w-md">
             <Button variant="outline" onClick={() => addStructure('function', 'sin')} className={buttonClass} size="sm">
               sin
             </Button>
@@ -818,7 +836,7 @@ const VisualCalculator: React.FC = () => {
         );
       case 'calculus':
         return (
-          <div className="grid grid-cols-4 gap-1.5 mx-auto max-w-sm">
+          <div className="grid grid-cols-4 gap-2 mx-auto max-w-md">
             <Button variant="outline" onClick={() => addStructure('function', 'diff')} className={buttonClass} size="sm">
               d/dx
             </Button>
@@ -848,7 +866,7 @@ const VisualCalculator: React.FC = () => {
         );
       case 'algebra':
         return (
-          <div className="grid grid-cols-4 gap-1.5 mx-auto max-w-sm">
+          <div className="grid grid-cols-4 gap-2 mx-auto max-w-md">
             <Button variant="outline" onClick={() => addElement('variable', 'a')} className={buttonClass} size="sm">
               a
             </Button>
@@ -887,6 +905,54 @@ const VisualCalculator: React.FC = () => {
             <Button variant="outline" onClick={() => addElement('operator', '>=')} className={buttonClass} size="sm">
               ≥
             </Button>
+          </div>
+        );
+      case 'system':
+        return (
+          <div className="space-y-4">
+            <div className="bg-noir-accent p-4 rounded">
+              <h3 className="text-lg font-medium mb-2 text-neon-cyan">System of Equations</h3>
+              <p className="text-sm text-gray-400 mb-4">Enter each equation on a new line</p>
+              <div className="space-y-2">
+                {systemEquations.map((equation, idx) => (
+                  <input
+                    key={idx}
+                    value={equation}
+                    onChange={(e) => handleSystemEquationChange(idx, e.target.value)}
+                    placeholder={`Equation ${idx + 1}, e.g. 2x + 3y = 7`}
+                    className="w-full p-2 rounded bg-noir-light border border-gray-700 text-white"
+                  />
+                ))}
+              </div>
+              <div className="mt-4">
+                <Button 
+                  onClick={calculateResult}
+                  className="w-full bg-neon-cyan text-black"
+                >
+                  Solve System
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 mx-auto">
+              <Button variant="outline" onClick={() => addElement('variable', 'x')} className="text-lg" size="sm">
+                x
+              </Button>
+              <Button variant="outline" onClick={() => addElement('variable', 'y')} className="text-lg" size="sm">
+                y
+              </Button>
+              <Button variant="outline" onClick={() => addElement('variable', 'z')} className="text-lg" size="sm">
+                z
+              </Button>
+              <Button variant="outline" onClick={() => addElement('operator', '=')} className="text-lg" size="sm">
+                =
+              </Button>
+              <Button variant="outline" onClick={() => addElement('operator', '+')} className="text-lg" size="sm">
+                +
+              </Button>
+              <Button variant="outline" onClick={() => addElement('operator', '-')} className="text-lg" size="sm">
+                -
+              </Button>
+            </div>
           </div>
         );
       default:
@@ -980,7 +1046,7 @@ const VisualCalculator: React.FC = () => {
         tabIndex={0}
       >
         <div
-          className="math-editor text-xl katex-font"
+          className="math-editor text-2xl katex-font"
           dangerouslySetInnerHTML={{ 
             __html: generateHtmlWithIds()
           }}
@@ -1032,9 +1098,9 @@ const VisualCalculator: React.FC = () => {
   return (
     <Card className="noir-card">
       <CardHeader>
-        <CardTitle className="text-xl text-neon-cyan">Visual Math Calculator</CardTitle>
+        <CardTitle className="text-xl text-neon-cyan">Visual Math Engine</CardTitle>
         <CardDescription>
-          Create beautiful, interactive mathematical expressions and calculate results.
+          Create, solve, and visualize complex mathematical expressions — Full Mathway Experience
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -1074,8 +1140,17 @@ const VisualCalculator: React.FC = () => {
             className="flex-shrink-0 font-serif katex-font text-xs"
             size="sm"
           >
-            <keyboard className="h-3 w-3 mr-1" />
+            <Keyboard className="h-3 w-3 mr-1" />
             Algebra
+          </Button>
+          <Button 
+            variant={currentTab === 'system' ? "default" : "outline"} 
+            onClick={() => setCurrentTab('system')}
+            className="flex-shrink-0 font-serif katex-font text-xs"
+            size="sm"
+          >
+            <Brackets className="h-3 w-3 mr-1" />
+            Systems
           </Button>
         </div>
         
@@ -1120,12 +1195,20 @@ const VisualCalculator: React.FC = () => {
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between border-t border-gray-800 pt-4 text-xs">
-        <p className="text-gray-400">Use arrow keys to navigate, Tab to cycle elements, Del to delete, Enter to calculate</p>
+      <CardFooter className="flex flex-col gap-2 border-t border-gray-800 pt-4">
+        <div className="flex justify-between w-full">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={clearCalculator}
+          >
+            Clear All
+          </Button>
+        </div>
+        <p className="text-gray-400 text-xs">Use arrow keys to navigate, Tab to cycle elements, Del to delete, Enter to calculate</p>
       </CardFooter>
     </Card>
   );
 };
 
 export default VisualCalculator;
-

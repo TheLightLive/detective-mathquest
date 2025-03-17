@@ -2,9 +2,10 @@
 import React, { useState } from 'react';
 import NavBar from "@/components/NavBar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calculator, FunctionSquare } from "lucide-react";
+import { Calculator, FunctionSquare, BookOpen } from "lucide-react";
 import VisualCalculator from '@/components/VisualCalculator';
 import FormulaLibrary from '@/components/FormulaLibrary';
+import MathLatexUnit from '@/components/MathLatexUnit';
 
 const MathTools: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('calculator');
@@ -21,11 +22,15 @@ const MathTools: React.FC = () => {
             <TabsList className="bg-noir-accent">
               <TabsTrigger value="calculator" className="flex items-center">
                 <Calculator className="h-4 w-4 mr-2" />
-                Visual Calculator
+                Math Engine
               </TabsTrigger>
               <TabsTrigger value="formulas" className="flex items-center">
                 <FunctionSquare className="h-4 w-4 mr-2" />
                 Formula Library
+              </TabsTrigger>
+              <TabsTrigger value="lessons" className="flex items-center">
+                <BookOpen className="h-4 w-4 mr-2" />
+                Math Academy
               </TabsTrigger>
             </TabsList>
             
@@ -35,6 +40,10 @@ const MathTools: React.FC = () => {
             
             <TabsContent value="formulas" className="space-y-4">
               <FormulaLibrary />
+            </TabsContent>
+            
+            <TabsContent value="lessons" className="space-y-4">
+              <MathLatexUnit />
             </TabsContent>
           </Tabs>
         </div>
